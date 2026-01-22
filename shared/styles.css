@@ -1,0 +1,196 @@
+/* Shared styles for Cells app */
+
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111;
+  --bg-tertiary: #1a1a1a;
+  --border-color: #222;
+  --border-hover: #333;
+  --text-primary: #a0a0a0;
+  --text-secondary: #666;
+  --text-muted: #555;
+  --accent-purple: #7a4a7a;
+  --accent-purple-light: #9a6a9a;
+  --accent-green: #4a7a4a;
+  --accent-green-light: #6a9a6a;
+  --accent-blue: #4a6a8a;
+  --accent-blue-light: #6a8aaa;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  padding-top: 3.5rem; /* Space for nav */
+}
+
+/* Navigation */
+.site-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  z-index: 1000;
+}
+
+.site-nav .nav-brand {
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-right: 2rem;
+}
+
+.site-nav .nav-brand:hover {
+  color: var(--text-secondary);
+}
+
+.site-nav .nav-links {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.site-nav .nav-link {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.site-nav .nav-link:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.site-nav .nav-link.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.site-nav .nav-divider {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--border-color);
+  margin: 0 0.5rem;
+}
+
+.site-nav .nav-section {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-right: 0.5rem;
+  opacity: 0.6;
+}
+
+/* Common panel styles */
+.panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Common button styles */
+.btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-hover);
+  color: #888;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  margin-right: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.btn:hover {
+  background: #222;
+  color: #aaa;
+  border-color: #444;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #2a1a2a;
+  border-color: #4a2a4a;
+  color: var(--accent-purple-light);
+}
+
+.btn-primary:hover {
+  background: #3a223a;
+  border-color: #5a3a5a;
+}
+
+.btn-success {
+  background: #1a2a1a;
+  border-color: #2a4a2a;
+  color: var(--accent-green-light);
+}
+
+.btn-success:hover {
+  background: #2a3a2a;
+  border-color: #3a5a3a;
+}
+
+/* Page header */
+.page-header {
+  padding: 1.5rem;
+  padding-bottom: 0;
+}
+
+.page-header h1 {
+  font-size: 1.2rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.3rem;
+}
+
+.page-header .subtitle {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Container */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
