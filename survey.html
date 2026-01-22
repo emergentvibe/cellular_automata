@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>262,144 Rule Survey</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #a0a0a0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { color: #4a7a4a; font-size: 1.2rem; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+    .subtitle { color: #555; font-size: 0.8rem; margin-bottom: 2rem; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .row { display: flex; gap: 2rem; margin-bottom: 2rem; }
+    .col { flex: 1; }
+    .col-narrow { flex: 0 0 300px; }
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .panel-title {
+      color: #666;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      padding: 0.6rem 1.2rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.15s ease;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button:hover { background: #222; color: #aaa; border-color: #444; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: #1a2a1a; border-color: #2a4a2a; color: #6a9a6a; }
+    button.primary:hover { background: #223a22; border-color: #3a5a3a; }
+    button.danger { background: #2a1a1a; border-color: #4a2a2a; color: #9a6a6a; }
+
+    .progress-container { margin: 1rem 0; }
+    .progress-bar {
+      height: 24px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2a4a2a, #3a6a3a);
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.75rem;
+      color: #888;
+      z-index: 1;
+    }
+    .progress-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .stat-item { background: #0d0d0d; padding: 1rem; border-radius: 3px; }
+    .stat-label { font-size: 0.65rem; color: #555; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+    .stat-value { font-size: 1.4rem; color: #6a9a6a; font-variant-numeric: tabular-nums; }
+
+    .preview-container { display: flex; gap: 1rem; align-items: flex-start; }
+    #preview-canvas { border: 1px solid #222; border-radius: 2px; background: #050505; }
+    .preview-info { flex: 1; }
+    .rule-name { font-size: 1rem; color: #7a9a7a; margin-bottom: 0.5rem; }
+    .rule-metrics { font-size: 0.75rem; line-height: 1.8; }
+    .metric-row { display: flex; justify-content: space-between; }
+    .metric-label { color: #555; }
+    .metric-value { color: #888; font-variant-numeric: tabular-nums; }
+
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .results-table th {
+      text-align: left; padding: 0.5rem; border-bottom: 1px solid #333;
+      color: #555; font-weight: normal; text-transform: uppercase;
+      letter-spacing: 0.1em; font-size: 0.65rem;
+    }
+    .results-table td { padding: 0.5rem; border-bottom: 1px solid #1a1a1a; font-variant-numeric: tabular-nums; }
+    .results-table tr:hover { background: #151515; }
+    .results-scroll { max-height: 300px; overflow-y: auto; }
+
+    .badge {
+      display: inline-block; padding: 0.15rem 0.4rem; border-radius: 2px;
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-extinct { background: #1a1a1a; color: #555; }
+    .badge-fixed { background: #1a2a2a; color: #5a8a8a; }
+    .badge-periodic { background: #2a2a1a; color: #8a8a5a; }
+    .badge-aperiodic { background: #1a2a1a; color: #5a8a5a; }
+
+    .log {
+      background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 3px;
+      padding: 1rem; max-height: 200px; overflow-y: auto; font-size: 0.75rem;
+    }
+    .log-entry { margin: 0.2rem 0; color: #555; }
+    .log-entry.success { color: #5a8a5a; }
+    .log-entry.error { color: #8a5a5a; }
+    .log-entry.warning { color: #8a7a5a; }
+
+    .settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .setting { display: flex; flex-direction: column; gap: 0.3rem; }
+    .setting label { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+    .setting input, .setting select {
+      background: #0d0d0d; border: 1px solid #222; color: #888;
+      padding: 0.5rem; font-family: inherit; font-size: 0.8rem; border-radius: 2px;
+    }
+    .setting input:focus, .setting select:focus { outline: none; border-color: #3a5a3a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>262,144 RULE SURVEY</h1>
+    <p class="subtitle">Mapping the (λ, D, γ) space of all Life-like cellular automata</p>
+
+    <div class="row">
+      <div class="col">
+        <div class="panel">
+          <div class="panel-title">Progress</div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+              <div class="progress-text" id="progress-text">0 / 262,144</div>
+            </div>
+            <div class="progress-stats">
+              <span id="elapsed-time">Elapsed: 0:00:00</span>
+              <span id="rate">0 rules/sec</span>
+              <span id="eta">ETA: --:--:--</span>
+            </div>
+          </div>
+          <div style="margin-top: 1rem;">
+            <button id="btn-start" class="primary">Start Survey</button>
+            <button id="btn-pause" disabled>Pause</button>
+            <button id="btn-resume" disabled>Resume</button>
+            <button id="btn-download" disabled>Download CSV</button>
+            <button id="btn-clear" class="danger">Clear Data</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Current Rule</div>
+          <div class="preview-container">
+            <canvas id="preview-canvas" width="150" height="150"></canvas>
+            <div class="preview-info">
+              <div class="rule-name" id="current-rule">--</div>
+              <div class="rule-metrics">
+                <div class="metric-row"><span class="metric-label">Rule ID:</span><span class="metric-value" id="current-id">--</span></div>
+                <div class="metric-row"><span class="metric-label">λ:</span><span class="metric-value" id="current-lambda">--</span></div>
+                <div class="metric-row"><span class="metric-label">D:</span><span class="metric-value" id="current-d">--</span></div>
+                <div class="metric-row"><span class="metric-label">γ:</span><span class="metric-value" id="current-gamma">--</span></div>
+                <div class="metric-row"><span class="metric-label">Class:</span><span class="metric-value" id="current-class">--</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Recent Results</div>
+          <div class="results-scroll">
+            <table class="results-table">
+              <thead><tr><th>Rule</th><th>λ</th><th>D</th><th>γ</th><th>Class</th></tr></thead>
+              <tbody id="results-body"><tr><td colspan="5" style="text-align: center; color: #444;">No results yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-narrow">
+        <div class="panel">
+          <div class="panel-title">Statistics</div>
+          <div class="stat-grid">
+            <div class="stat-item"><div class="stat-label">Completed</div><div class="stat-value" id="stat-completed">0</div></div>
+            <div class="stat-item"><div class="stat-label">Remaining</div><div class="stat-value" id="stat-remaining">262,144</div></div>
+            <div class="stat-item"><div class="stat-label">Avg λ</div><div class="stat-value" id="stat-lambda">--</div></div>
+            <div class="stat-item"><div class="stat-label">Avg D</div><div class="stat-value" id="stat-d">--</div></div>
+          </div>
+          <div style="margin-top: 1rem;">
+            <div class="panel-title">Classifications</div>
+            <div class="rule-metrics">
+              <div class="metric-row"><span class="metric-label">Extinct:</span><span class="metric-value" id="class-extinct">0</span></div>
+              <div class="metric-row"><span class="metric-label">Fixed:</span><span class="metric-value" id="class-fixed">0</span></div>
+              <div class="metric-row"><span class="metric-label">Periodic:</span><span class="metric-value" id="class-periodic">0</span></div>
+              <div class="metric-row"><span class="metric-label">Aperiodic:</span><span class="metric-value" id="class-aperiodic">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Settings</div>
+          <div class="settings-grid">
+            <div class="setting">
+              <label>Grid Size</label>
+              <select id="setting-grid">
+                <option value="64">64×64 (fast ~20 rules/sec)</option>
+                <option value="128" selected>128×128 (balanced ~5 rules/sec)</option>
+                <option value="256">256×256 (thorough ~1 rule/sec)</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Steps</label>
+              <select id="setting-steps">
+                <option value="200">200 (fast)</option>
+                <option value="500" selected>500 (balanced)</option>
+                <option value="1000">1000 (thorough)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Log</div>
+          <div class="log" id="log"><div class="log-entry">Ready to start survey.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // EMBEDDED CA ENGINE (no external imports)
+    // ============================================
+
+    // Seeded random number generator
+    function seededRandom(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    // Grid class
+    class Grid {
+      constructor(rows, cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.cells = new Uint8Array(rows * cols);
+      }
+      idx(r, c) { return r * this.cols + c; }
+      get(r, c) {
+        r = ((r % this.rows) + this.rows) % this.rows;
+        c = ((c % this.cols) + this.cols) % this.cols;
+        return this.cells[this.idx(r, c)];
+      }
+      set(r, c, v) { this.cells[this.idx(r, c)] = v; }
+      countNeighbors(r, c) {
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            if (this.get(r + dr, c + dc) > 0) count++;
+          }
+        }
+        return count;
+      }
+      randomize(density, seed) {
+        const rng = seededRandom(seed);
+        for (let i = 0; i < this.cells.length; i++) {
+          this.cells[i] = rng() < density ? 1 : 0;
+        }
+      }
+      clone() {
+        const copy = new Grid(this.rows, this.cols);
+        copy.cells.set(this.cells);
+        return copy;
+      }
+      population() {
+        let count = 0;
+        for (let i = 0; i < this.cells.length; i++) if (this.cells[i] > 0) count++;
+        return count;
+      }
+      isEmpty() { return this.population() === 0; }
+      hammingDistance(other) {
+        let diff = 0;
+        for (let i = 0; i < this.cells.length; i++) {
+          if ((this.cells[i] > 0) !== (other.cells[i] > 0)) diff++;
+        }
+        return diff;
+      }
+      flipCell(r, c) {
+        const i = this.idx(r, c);
+        this.cells[i] = this.cells[i] > 0 ? 0 : 1;
+      }
+      hash() {
+        let hash = 2166136261;
+        for (let i = 0; i < this.cells.length; i++) {
+          hash ^= this.cells[i] > 0 ? 1 : 0;
+          hash = Math.imul(hash, 16777619) >>> 0;
+        }
+        return hash;
+      }
+    }
+
+    // Rule class
+    class Rule {
+      constructor(birthMask, survivalMask) {
+        this.birthMask = birthMask;
+        this.survivalMask = survivalMask;
+      }
+      shouldBirth(n) { return (this.birthMask & (1 << n)) !== 0; }
+      shouldSurvive(n) { return (this.survivalMask & (1 << n)) !== 0; }
+      toString() {
+        let b = '', s = '';
+        for (let i = 0; i <= 8; i++) {
+          if (this.birthMask & (1 << i)) b += i;
+          if (this.survivalMask & (1 << i)) s += i;
+        }
+        return `B${b}/S${s}`;
+      }
+      static fromId(id) {
+        return new Rule(Math.floor(id / 512), id % 512);
+      }
+    }
+
+    // Step function
+    function stepInPlace(current, next, rule) {
+      for (let r = 0; r < current.rows; r++) {
+        for (let c = 0; c < current.cols; c++) {
+          const state = current.get(r, c);
+          const neighbors = current.countNeighbors(r, c);
+          if (state > 0) {
+            next.set(r, c, rule.shouldSurvive(neighbors) ? Math.min(state + 1, 255) : 0);
+          } else {
+            next.set(r, c, rule.shouldBirth(neighbors) ? 1 : 0);
+          }
+        }
+      }
+    }
+
+    // Box-counting dimension
+    function measureDimension(grid) {
+      const scales = [1, 2, 4, 8, 16, 32, 64];
+      const data = [];
+      for (const scale of scales) {
+        if (scale > grid.rows / 2) continue;
+        let count = 0;
+        const boxRows = Math.ceil(grid.rows / scale);
+        const boxCols = Math.ceil(grid.cols / scale);
+        for (let br = 0; br < boxRows; br++) {
+          for (let bc = 0; bc < boxCols; bc++) {
+            let hasLife = false;
+            for (let r = br * scale; r < Math.min((br + 1) * scale, grid.rows) && !hasLife; r++) {
+              for (let c = bc * scale; c < Math.min((bc + 1) * scale, grid.cols) && !hasLife; c++) {
+                if (grid.cells[grid.idx(r, c)] > 0) hasLife = true;
+              }
+            }
+            if (hasLife) count++;
+          }
+        }
+        if (count > 0) data.push({ scale, count, logScale: Math.log(scale), logCount: Math.log(count) });
+      }
+      if (data.length < 2) return { dimension: 0 };
+      // Linear regression
+      const n = data.length;
+      const sumX = data.reduce((s, d) => s + d.logScale, 0);
+      const sumY = data.reduce((s, d) => s + d.logCount, 0);
+      const sumXY = data.reduce((s, d) => s + d.logScale * d.logCount, 0);
+      const sumX2 = data.reduce((s, d) => s + d.logScale * d.logScale, 0);
+      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      return { dimension: -slope };
+    }
+
+    // Simplified BDM (entropy-based approximation)
+    function computeBDM(grid) {
+      const blockSize = 4;
+      const blockCounts = new Map();
+      const blockRows = Math.ceil(grid.rows / blockSize);
+      const blockCols = Math.ceil(grid.cols / blockSize);
+      for (let br = 0; br < blockRows; br++) {
+        for (let bc = 0; bc < blockCols; bc++) {
+          let value = 0;
+          for (let r = 0; r < blockSize; r++) {
+            for (let c = 0; c < blockSize; c++) {
+              const row = br * blockSize + r;
+              const col = bc * blockSize + c;
+              if (row < grid.rows && col < grid.cols && grid.cells[grid.idx(row, col)] > 0) {
+                value |= (1 << (r * blockSize + c));
+              }
+            }
+          }
+          blockCounts.set(value, (blockCounts.get(value) || 0) + 1);
+        }
+      }
+      let bdm = 0;
+      for (const [block, count] of blockCounts) {
+        // Approximate CTM: entropy-based
+        const bits = block.toString(2).split('1').length - 1;
+        const complexity = bits === 0 || bits === 16 ? 1 : Math.min(8, 2 + bits * 0.5);
+        bdm += complexity + Math.log2(count);
+      }
+      return { bdm, uniqueBlocks: blockCounts.size };
+    }
+
+    // Measure a single rule
+    function measureRule(ruleId, gridSize, steps) {
+      const rule = Rule.fromId(ruleId);
+      const seed = ruleId * 7919; // Deterministic seed based on rule
+
+      // Initialize grid
+      const grid = new Grid(gridSize, gridSize);
+      grid.randomize(0.3, seed);
+
+      // Initial BDM
+      const bdmInitial = computeBDM(grid);
+
+      // Run simulation with periodicity detection
+      let current = grid.clone();
+      let next = new Grid(gridSize, gridSize);
+      const hashes = new Map();
+      let classification = 'aperiodic';
+      let period = null;
+      let finalGen = steps;
+
+      for (let t = 0; t < steps; t++) {
+        if (current.isEmpty()) {
+          classification = 'extinct';
+          finalGen = t;
+          break;
+        }
+        const hash = current.hash();
+        if (hashes.has(hash)) {
+          period = t - hashes.get(hash);
+          classification = period === 1 ? 'fixed' : 'periodic';
+          finalGen = t;
+          break;
+        }
+        if (hashes.size < 500) hashes.set(hash, t);
+        stepInPlace(current, next, rule);
+        [current, next] = [next, current];
+      }
+
+      // Final measurements
+      const bdmFinal = computeBDM(current);
+      const dimension = measureDimension(current);
+      // Only compute gamma if we ran enough steps (avoid divide by tiny number)
+      const gamma = finalGen >= 10 ? ((bdmFinal.bdm - bdmInitial.bdm) / finalGen) * 1000 : 0;
+
+      // Lambda (simplified: just 1 trial for speed)
+      const grid1 = new Grid(gridSize, gridSize);
+      const grid2 = new Grid(gridSize, gridSize);
+      const rng = seededRandom(seed + 1000000);
+      for (let i = 0; i < grid1.cells.length; i++) {
+        const v = rng() < 0.3 ? 1 : 0;
+        grid1.cells[i] = v;
+        grid2.cells[i] = v;
+      }
+      grid2.flipCell(Math.floor(rng() * gridSize), Math.floor(rng() * gridSize));
+
+      let c1 = grid1, c2 = grid2;
+      let n1 = new Grid(gridSize, gridSize), n2 = new Grid(gridSize, gridSize);
+      const lambdaSteps = Math.min(steps, 200); // Shorter for speed
+      for (let t = 0; t < lambdaSteps; t++) {
+        stepInPlace(c1, n1, rule);
+        stepInPlace(c2, n2, rule);
+        [c1, n1] = [n1, c1];
+        [c2, n2] = [n2, c2];
+      }
+      const hFinal = c1.hammingDistance(c2);
+      const lambda = hFinal === 0 ? -10 : Math.log(hFinal) / lambdaSteps;
+
+      return {
+        rule_id: ruleId,
+        rule_string: rule.toString(),
+        lambda,
+        D: dimension.dimension,
+        gamma,
+        population: current.population(),
+        classification,
+        period
+      };
+    }
+
+    // ============================================
+    // SURVEY UI
+    // ============================================
+
+    const TOTAL_RULES = 262144;
+    const STORAGE_KEY = 'cells_survey_v2';
+    const BATCH_SIZE = 10;
+    const UI_UPDATE_INTERVAL = 100; // ms
+
+    let results = [];
+    let completedSet = new Set();
+    let isRunning = false;
+    let isPaused = false;
+    let startTime = null;
+    let currentRuleIndex = 0;
+    let recentResults = [];
+
+    // DOM elements
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const elapsedTime = document.getElementById('elapsed-time');
+    const rateEl = document.getElementById('rate');
+    const etaEl = document.getElementById('eta');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnResume = document.getElementById('btn-resume');
+    const btnDownload = document.getElementById('btn-download');
+    const btnClear = document.getElementById('btn-clear');
+    const resultsBody = document.getElementById('results-body');
+    const logEl = document.getElementById('log');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      if (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+    }
+
+    function formatTime(ms) {
+      const s = Math.floor(ms / 1000);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+      const completed = completedSet.size;
+      const percent = (completed / TOTAL_RULES) * 100;
+      const elapsed = startTime ? Date.now() - startTime : 0;
+      const rate = elapsed > 0 ? completed / (elapsed / 1000) : 0;
+      const remaining = TOTAL_RULES - completed;
+      const eta = rate > 0 ? remaining / rate * 1000 : 0;
+
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = `${completed.toLocaleString()} / ${TOTAL_RULES.toLocaleString()}`;
+      elapsedTime.textContent = `Elapsed: ${formatTime(elapsed)}`;
+      rateEl.textContent = `${rate.toFixed(1)} rules/sec`;
+      etaEl.textContent = `ETA: ${formatTime(eta)}`;
+
+      document.getElementById('stat-completed').textContent = completed.toLocaleString();
+      document.getElementById('stat-remaining').textContent = remaining.toLocaleString();
+
+      // Classification counts
+      const counts = { extinct: 0, fixed: 0, periodic: 0, aperiodic: 0 };
+      for (const r of results) counts[r.classification]++;
+      document.getElementById('class-extinct').textContent = counts.extinct.toLocaleString();
+      document.getElementById('class-fixed').textContent = counts.fixed.toLocaleString();
+      document.getElementById('class-periodic').textContent = counts.periodic.toLocaleString();
+      document.getElementById('class-aperiodic').textContent = counts.aperiodic.toLocaleString();
+
+      // Averages
+      const validLambdas = results.filter(r => r.lambda > -10).map(r => r.lambda);
+      const avgLambda = validLambdas.length > 0 ? validLambdas.reduce((a, b) => a + b, 0) / validLambdas.length : 0;
+      const avgD = results.length > 0 ? results.reduce((a, r) => a + r.D, 0) / results.length : 0;
+      document.getElementById('stat-lambda').textContent = avgLambda.toFixed(3);
+      document.getElementById('stat-d').textContent = avgD.toFixed(3);
+    }
+
+    function updateCurrentRule(result) {
+      document.getElementById('current-rule').textContent = result.rule_string;
+      document.getElementById('current-id').textContent = result.rule_id;
+      document.getElementById('current-lambda').textContent = result.lambda.toFixed(4);
+      document.getElementById('current-d').textContent = result.D.toFixed(4);
+      document.getElementById('current-gamma').textContent = result.gamma.toFixed(2);
+      document.getElementById('current-class').textContent = result.classification;
+
+      // Draw preview
+      drawPreview(result.rule_id);
+    }
+
+    function drawPreview(ruleId) {
+      const rule = Rule.fromId(ruleId);
+      const size = 50;
+      const cellSize = 3;
+
+      previewCtx.fillStyle = '#050505';
+      previewCtx.fillRect(0, 0, 150, 150);
+
+      const grid = new Grid(size, size);
+      grid.randomize(0.3, ruleId * 7919);
+      let current = grid, next = new Grid(size, size);
+
+      for (let i = 0; i < 100; i++) {
+        stepInPlace(current, next, rule);
+        [current, next] = [next, current];
+      }
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (current.cells[current.idx(r, c)] > 0) {
+            previewCtx.fillStyle = '#4a7a4a';
+            previewCtx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
+          }
+        }
+      }
+    }
+
+    function addResultToTable(result) {
+      recentResults.unshift(result);
+      if (recentResults.length > 20) recentResults.pop();
+
+      resultsBody.innerHTML = recentResults.map(r => `
+        <tr>
+          <td>${r.rule_string}</td>
+          <td>${r.lambda > -10 ? r.lambda.toFixed(4) : 'healed'}</td>
+          <td>${r.D.toFixed(4)}</td>
+          <td>${r.gamma.toFixed(1)}</td>
+          <td><span class="badge badge-${r.classification}">${r.classification}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function saveCheckpoint() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          results,
+          completed: Array.from(completedSet),
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error('Checkpoint save failed:', e);
+      }
+    }
+
+    function loadCheckpoint() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (data) {
+          results = data.results || [];
+          completedSet = new Set(data.completed || []);
+          log(`Loaded checkpoint: ${completedSet.size} rules`, 'success');
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function exportCSV() {
+      const headers = ['rule_id', 'rule_string', 'lambda', 'D', 'gamma', 'population', 'classification', 'period'];
+      const rows = [headers.join(',')];
+      for (const r of results) {
+        rows.push([r.rule_id, `"${r.rule_string}"`, r.lambda.toFixed(6), r.D.toFixed(4),
+          r.gamma.toFixed(4), r.population, r.classification, r.period ?? ''].join(','));
+      }
+      return rows.join('\n');
+    }
+
+    async function runSurvey() {
+      const gridSize = parseInt(document.getElementById('setting-grid').value);
+      const steps = parseInt(document.getElementById('setting-steps').value);
+
+      log(`Starting survey: ${gridSize}×${gridSize} grid, ${steps} steps`, 'info');
+
+      // Find next rule to process
+      while (currentRuleIndex < TOTAL_RULES && completedSet.has(currentRuleIndex)) {
+        currentRuleIndex++;
+      }
+
+      let lastUIUpdate = Date.now();
+      let batchCount = 0;
+
+      while (isRunning && !isPaused && currentRuleIndex < TOTAL_RULES) {
+        const ruleId = currentRuleIndex;
+
+        // Measure rule
+        const result = measureRule(ruleId, gridSize, steps);
+        results.push(result);
+        completedSet.add(ruleId);
+        currentRuleIndex++;
+        batchCount++;
+
+        // Update UI periodically
+        if (Date.now() - lastUIUpdate > UI_UPDATE_INTERVAL) {
+          updateCurrentRule(result);
+          addResultToTable(result);
+          updateProgress();
+          lastUIUpdate = Date.now();
+
+          // Yield to browser
+          await new Promise(r => setTimeout(r, 0));
+        }
+
+        // Save checkpoint frequently (every 50 rules)
+        if (batchCount % 50 === 0) {
+          saveCheckpoint();
+          log(`Checkpoint saved: ${completedSet.size} rules`, 'info');
+        }
+
+        // Skip completed rules
+        while (currentRuleIndex < TOTAL_RULES && completedSet.has(currentRuleIndex)) {
+          currentRuleIndex++;
+        }
+      }
+
+      if (completedSet.size >= TOTAL_RULES) {
+        log(`Survey complete! ${results.length} rules measured`, 'success');
+        isRunning = false;
+        saveCheckpoint();
+      }
+
+      updateProgress();
+      setButtonStates();
+    }
+
+    function setButtonStates() {
+      btnStart.disabled = isRunning;
+      btnPause.disabled = !isRunning || isPaused;
+      btnResume.disabled = !isPaused;
+      btnDownload.disabled = results.length === 0;
+      document.querySelectorAll('.setting select').forEach(el => el.disabled = isRunning);
+    }
+
+    // Event handlers
+    btnStart.addEventListener('click', async () => {
+      loadCheckpoint();
+      isRunning = true;
+      isPaused = false;
+      startTime = startTime || Date.now();
+      setButtonStates();
+      await runSurvey();
+    });
+
+    btnPause.addEventListener('click', () => {
+      isPaused = true;
+      log('Survey paused', 'warning');
+      saveCheckpoint();
+      setButtonStates();
+    });
+
+    btnResume.addEventListener('click', async () => {
+      isPaused = false;
+      isRunning = true;
+      log('Survey resumed', 'info');
+      setButtonStates();
+      await runSurvey();
+    });
+
+    btnDownload.addEventListener('click', () => {
+      const csv = exportCSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'lifelike-survey.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      log(`Downloaded ${results.length} results`, 'success');
+    });
+
+    btnClear.addEventListener('click', () => {
+      if (confirm('Clear all survey data?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        results = [];
+        completedSet.clear();
+        currentRuleIndex = 0;
+        recentResults = [];
+        startTime = null;
+        resultsBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #444;">No results yet</td></tr>';
+        updateProgress();
+        log('Survey data cleared', 'warning');
+        setButtonStates();
+      }
+    });
+
+    // Initialize
+    if (loadCheckpoint()) {
+      updateProgress();
+      btnDownload.disabled = results.length === 0;
+    }
+    setButtonStates();
+  </script>
+</body>
+</html>

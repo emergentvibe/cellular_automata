@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Survey - GPU Accelerated</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #a0a0a0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    h1 { color: #7a4a7a; font-size: 1.2rem; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+    .subtitle { color: #555; font-size: 0.75rem; margin-bottom: 1.5rem; }
+    .gpu-badge { display: inline-block; background: #2a1a2a; color: #9a6a9a; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.65rem; margin-left: 0.75rem; }
+    .container { max-width: 1600px; margin: 0 auto; }
+
+    /* Three column layout */
+    .main-grid { display: grid; grid-template-columns: 1fr 340px 300px; gap: 1.5rem; }
+    @media (max-width: 1200px) { .main-grid { grid-template-columns: 1fr 300px; } }
+    @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .panel-title {
+      color: #666;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .panel-title .icon { opacity: 0.5; }
+
+    button {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      padding: 0.5rem 1rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.15s ease;
+      margin-right: 0.4rem;
+      margin-bottom: 0.4rem;
+    }
+    button:hover { background: #222; color: #aaa; border-color: #444; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: #2a1a2a; border-color: #4a2a4a; color: #9a6a9a; }
+    button.primary:hover { background: #3a223a; border-color: #5a3a5a; }
+    button.danger { background: #2a1a1a; border-color: #4a2a2a; color: #9a6a6a; }
+    button.secondary { background: #1a1a2a; border-color: #2a2a4a; color: #6a6a9a; }
+
+    .progress-container { margin: 0.75rem 0; }
+    .progress-bar {
+      height: 20px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4a2a4a, #6a3a6a);
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.7rem;
+      color: #888;
+      z-index: 1;
+    }
+    .progress-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.4rem;
+      font-size: 0.7rem;
+      color: #555;
+    }
+
+    /* Current Rule - Hero Card */
+    .current-rule-card {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 1.25rem;
+    }
+    #preview-canvas { border: 1px solid #222; border-radius: 3px; background: #050505; }
+    .rule-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .rule-name { font-size: 1.3rem; color: #9a7a9a; font-weight: 500; }
+    .rule-id { font-size: 0.7rem; color: #555; }
+    .rule-flags { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+    .flag {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .flag-b0 { background: #3a2a1a; color: #c9a55a; }
+    .flag-class { background: #1a1a2a; color: #7a7aaa; }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    .metric-card {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 3px;
+      padding: 0.6rem;
+    }
+    .metric-card.highlight { border-color: #3a2a3a; background: #151015; }
+    .metric-label {
+      font-size: 0.55rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.2rem;
+    }
+    .metric-value {
+      font-size: 0.95rem;
+      color: #9a8a9a;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-value.small { font-size: 0.8rem; }
+    .metric-sub { font-size: 0.6rem; color: #555; margin-top: 0.1rem; }
+
+    /* Stats Grid */
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+    .stat-item { background: #0d0d0d; padding: 0.6rem; border-radius: 3px; }
+    .stat-label { font-size: 0.55rem; color: #555; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.15rem; }
+    .stat-value { font-size: 1rem; color: #9a6a9a; font-variant-numeric: tabular-nums; }
+    .stat-value.small { font-size: 0.85rem; }
+
+    /* Classification bars */
+    .class-bars { margin-top: 0.75rem; }
+    .class-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.65rem;
+    }
+    .class-bar-label { width: 60px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+    .class-bar-track { flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; }
+    .class-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+    .class-bar-fill.extinct { background: #444; }
+    .class-bar-fill.fixed { background: #4a7a7a; }
+    .class-bar-fill.periodic { background: #7a7a4a; }
+    .class-bar-fill.aperiodic { background: #7a4a7a; }
+    .class-bar-value { width: 50px; text-align: right; color: #666; font-variant-numeric: tabular-nums; }
+
+    /* Results Table */
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.65rem; }
+    .results-table th {
+      text-align: left; padding: 0.35rem 0.3rem; border-bottom: 1px solid #333;
+      color: #555; font-weight: normal; text-transform: uppercase;
+      letter-spacing: 0.03em; font-size: 0.55rem;
+      position: sticky; top: 0; background: #111;
+    }
+    .results-table td { padding: 0.35rem 0.3rem; border-bottom: 1px solid #1a1a1a; font-variant-numeric: tabular-nums; }
+    .results-table tr:hover { background: #151515; }
+    .results-scroll { max-height: 320px; overflow-y: auto; }
+
+    .badge {
+      display: inline-block; padding: 0.1rem 0.25rem; border-radius: 2px;
+      font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .badge-extinct { background: #1a1a1a; color: #555; }
+    .badge-fixed { background: #1a2a2a; color: #5a8a8a; }
+    .badge-periodic { background: #2a2a1a; color: #8a8a5a; }
+    .badge-aperiodic { background: #2a1a2a; color: #8a5a8a; }
+    .b0-indicator { color: #c9a55a; }
+
+    .log {
+      background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 3px;
+      padding: 0.6rem; max-height: 120px; overflow-y: auto; font-size: 0.65rem;
+    }
+    .log-entry { margin: 0.1rem 0; color: #555; }
+    .log-entry.success { color: #5a8a5a; }
+    .log-entry.error { color: #8a5a5a; }
+    .log-entry.warning { color: #8a7a5a; }
+    .log-entry.info { color: #5a7a8a; }
+
+    .settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+    .setting { display: flex; flex-direction: column; gap: 0.15rem; }
+    .setting label { font-size: 0.55rem; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+    .setting input, .setting select {
+      background: #0d0d0d; border: 1px solid #222; color: #888;
+      padding: 0.35rem; font-family: inherit; font-size: 0.7rem; border-radius: 2px;
+    }
+
+    .error-banner {
+      background: #2a1a1a; border: 1px solid #4a2a2a; color: #aa6a6a;
+      padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;
+    }
+
+    /* Population Sparkline */
+    .pop-sparkline {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 24px;
+      margin-top: 0.5rem;
+    }
+    .pop-bar {
+      flex: 1;
+      background: #4a3a4a;
+      border-radius: 1px;
+      min-width: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RULE SURVEY <span class="gpu-badge">GPU ACCELERATED</span></h1>
+    <p class="subtitle">WebGPU-powered survey of all 262,144 Life-like rules</p>
+
+    <div id="error-banner" class="error-banner"></div>
+
+    <div class="main-grid">
+      <!-- LEFT COLUMN: Main Content -->
+      <div class="left-col">
+        <!-- Progress Panel -->
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9654;</span> Progress</div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+              <div class="progress-text" id="progress-text">0 / 262,144</div>
+            </div>
+            <div class="progress-stats">
+              <span id="elapsed-time">Elapsed: 0:00:00</span>
+              <span id="rate">0 rules/sec</span>
+              <span id="eta">ETA: --:--:--</span>
+            </div>
+          </div>
+          <div style="margin-top: 0.75rem;">
+            <button id="btn-start" class="primary">Start Survey</button>
+            <button id="btn-pause" disabled>Pause</button>
+            <button id="btn-resume" disabled>Resume</button>
+            <button id="btn-download" disabled>Download CSV</button>
+            <button id="btn-import-csv" class="secondary">Import Checkpoint</button>
+            <button id="btn-clear" class="danger">Clear</button>
+          </div>
+          <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+        </div>
+
+        <!-- Current Rule - Hero Card -->
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9673;</span> Current Rule</div>
+          <div class="current-rule-card">
+            <canvas id="preview-canvas" width="160" height="160"></canvas>
+            <div class="rule-details">
+              <div class="rule-header">
+                <span class="rule-name" id="current-rule">--</span>
+                <span class="rule-id">ID: <span id="current-id">--</span></span>
+              </div>
+              <div class="rule-flags">
+                <span class="flag flag-class" id="current-class-flag">--</span>
+                <span class="flag flag-b0" id="current-b0-flag" style="display: none;">B0</span>
+              </div>
+
+              <!-- 3x5 Metrics Grid -->
+              <div class="metrics-grid">
+                <!-- Row 1: Core dynamics -->
+                <div class="metric-card highlight">
+                  <div class="metric-label">Lambda (λ)</div>
+                  <div class="metric-value" id="current-lambda">--</div>
+                  <div class="metric-sub" id="current-lambda-std">± --</div>
+                </div>
+                <div class="metric-card highlight">
+                  <div class="metric-label">Dimension (D)</div>
+                  <div class="metric-value" id="current-d">--</div>
+                  <div class="metric-sub" id="current-d-r2">R² --</div>
+                </div>
+                <div class="metric-card highlight">
+                  <div class="metric-label">Period</div>
+                  <div class="metric-value" id="current-period">--</div>
+                  <div class="metric-sub" id="current-period-conf">conf --</div>
+                </div>
+
+                <!-- Row 2: Population -->
+                <div class="metric-card">
+                  <div class="metric-label">Pop Final</div>
+                  <div class="metric-value" id="current-pop-final">--</div>
+                  <div class="metric-sub">peak: <span id="current-pop-peak">--</span></div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Pop Mean</div>
+                  <div class="metric-value" id="current-pop-mean">--</div>
+                  <div class="metric-sub">σ: <span id="current-pop-std">--</span></div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Pop Trend</div>
+                  <div class="metric-value" id="current-pop-trend">--</div>
+                  <div class="metric-sub">slope/step</div>
+                </div>
+
+                <!-- Row 3: Activity -->
+                <div class="metric-card">
+                  <div class="metric-label">Activity</div>
+                  <div class="metric-value" id="current-activity-mean">--</div>
+                  <div class="metric-sub">σ: <span id="current-activity-std">--</span></div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Tot Births</div>
+                  <div class="metric-value small" id="current-total-births">--</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Tot Deaths</div>
+                  <div class="metric-value small" id="current-total-deaths">--</div>
+                </div>
+
+                <!-- Row 4: Spatial -->
+                <div class="metric-card">
+                  <div class="metric-label">Clusters</div>
+                  <div class="metric-value" id="current-clusters">--</div>
+                  <div class="metric-sub">largest: <span id="current-largest">--</span></div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Edge Ratio</div>
+                  <div class="metric-value" id="current-edge">--</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Dens Var</div>
+                  <div class="metric-value small" id="current-densvar">--</div>
+                </div>
+
+                <!-- Row 5: Rule & Timing -->
+                <div class="metric-card">
+                  <div class="metric-label">B/S</div>
+                  <div class="metric-value small" id="current-bs">--</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Settle</div>
+                  <div class="metric-value small" id="current-settle">--</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Gamma (γ)</div>
+                  <div class="metric-value small" id="current-gamma">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Results Table -->
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9776;</span> Recent Results</div>
+          <div class="results-scroll">
+            <table class="results-table">
+              <thead><tr>
+                <th>Rule</th>
+                <th>λ</th>
+                <th>D</th>
+                <th>Per</th>
+                <th>Pop</th>
+                <th>σ</th>
+                <th>Act</th>
+                <th>Clst</th>
+                <th>Class</th>
+              </tr></thead>
+              <tbody id="results-body"><tr><td colspan="9" style="text-align: center; color: #444; padding: 2rem;">No results yet - start the survey</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MIDDLE COLUMN: Statistics -->
+      <div class="middle-col">
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9632;</span> Statistics</div>
+          <div class="stat-grid">
+            <div class="stat-item">
+              <div class="stat-label">Completed</div>
+              <div class="stat-value" id="stat-completed">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Remaining</div>
+              <div class="stat-value" id="stat-remaining">262,144</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Avg Lambda</div>
+              <div class="stat-value small" id="stat-lambda">--</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Avg D</div>
+              <div class="stat-value small" id="stat-d">--</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Avg Gamma</div>
+              <div class="stat-value small" id="stat-gamma">--</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">B0 Rules</div>
+              <div class="stat-value small" id="stat-b0">0</div>
+            </div>
+          </div>
+
+          <!-- Classification Bars -->
+          <div class="class-bars">
+            <div class="panel-title" style="margin-top: 1rem;">Classifications</div>
+            <div class="class-bar-row">
+              <span class="class-bar-label">Extinct</span>
+              <div class="class-bar-track"><div class="class-bar-fill extinct" id="bar-extinct" style="width: 0%"></div></div>
+              <span class="class-bar-value" id="class-extinct">0</span>
+            </div>
+            <div class="class-bar-row">
+              <span class="class-bar-label">Fixed</span>
+              <div class="class-bar-track"><div class="class-bar-fill fixed" id="bar-fixed" style="width: 0%"></div></div>
+              <span class="class-bar-value" id="class-fixed">0</span>
+            </div>
+            <div class="class-bar-row">
+              <span class="class-bar-label">Periodic</span>
+              <div class="class-bar-track"><div class="class-bar-fill periodic" id="bar-periodic" style="width: 0%"></div></div>
+              <span class="class-bar-value" id="class-periodic">0</span>
+            </div>
+            <div class="class-bar-row">
+              <span class="class-bar-label">Aperiodic</span>
+              <div class="class-bar-track"><div class="class-bar-fill aperiodic" id="bar-aperiodic" style="width: 0%"></div></div>
+              <span class="class-bar-value" id="class-aperiodic">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Averages by Class -->
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9679;</span> Averages by Class</div>
+          <div style="font-size: 0.65rem; line-height: 1.8;">
+            <div style="display: flex; justify-content: space-between; color: #555; border-bottom: 1px solid #222; padding-bottom: 0.3rem; margin-bottom: 0.3rem;">
+              <span style="width: 70px;">Class</span>
+              <span style="width: 50px; text-align: right;">Avg D</span>
+              <span style="width: 55px; text-align: right;">Avg Pop</span>
+              <span style="width: 50px; text-align: right;">Avg Clst</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;" id="avg-extinct">
+              <span style="width: 70px; color: #555;">Extinct</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+              <span style="width: 55px; text-align: right; color: #666;">--</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;" id="avg-fixed">
+              <span style="width: 70px; color: #5a8a8a;">Fixed</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+              <span style="width: 55px; text-align: right; color: #666;">--</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;" id="avg-periodic">
+              <span style="width: 70px; color: #8a8a5a;">Periodic</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+              <span style="width: 55px; text-align: right; color: #666;">--</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;" id="avg-aperiodic">
+              <span style="width: 70px; color: #8a5a8a;">Aperiodic</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+              <span style="width: 55px; text-align: right; color: #666;">--</span>
+              <span style="width: 50px; text-align: right; color: #666;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Density Variance Distribution -->
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9641;</span> Spatial Heterogeneity</div>
+          <div style="font-size: 0.65rem; color: #555;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+              <span>Avg Density Var</span>
+              <span id="stat-densvar" style="color: #888;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+              <span>Avg Edge Ratio</span>
+              <span id="stat-edge" style="color: #888;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Avg Largest Cluster</span>
+              <span id="stat-largest" style="color: #888;">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Settings & Log -->
+      <div class="right-col">
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9881;</span> Settings</div>
+          <div class="settings-grid">
+            <div class="setting">
+              <label>Grid Size</label>
+              <select id="setting-grid">
+                <option value="128">128x128</option>
+                <option value="256" selected>256x256</option>
+                <option value="512">512x512</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Steps</label>
+              <select id="setting-steps">
+                <option value="1000">1000</option>
+                <option value="2000" selected>2000</option>
+                <option value="5000">5000</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>UI Update</label>
+              <select id="setting-batch">
+                <option value="1">Every rule</option>
+                <option value="10" selected>Every 10</option>
+                <option value="50">Every 50</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Auto-save</label>
+              <select id="setting-autosave">
+                <option value="500">500 rules</option>
+                <option value="1000" selected>1000 rules</option>
+                <option value="2000">2000 rules</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9998;</span> Activity Log</div>
+          <div class="log" id="log"><div class="log-entry">GPU Survey ready. Checking WebGPU support...</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title"><span class="icon">&#9432;</span> CSV Fields (31 columns)</div>
+          <div style="font-size: 0.55rem; color: #555; line-height: 1.5;">
+            <strong style="color: #666;">Rule:</strong> rule_id, rule_string, birth_count, survival_count, has_B0<br>
+            <strong style="color: #666;">Dynamics:</strong> lambda, lambda_std, D, D_r_squared, gamma<br>
+            <strong style="color: #666;">Class:</strong> classification, period, period_confidence<br>
+            <strong style="color: #666;">Population:</strong> pop_final, pop_peak, pop_min, pop_mean, pop_std, pop_trend, pop_t100, pop_t500, pop_t1000<br>
+            <strong style="color: #666;">Activity:</strong> activity_mean, activity_std, total_births, total_deaths<br>
+            <strong style="color: #666;">Timing:</strong> time_to_settle, extinction_time<br>
+            <strong style="color: #666;">Spatial:</strong> cluster_count, largest_cluster_ratio, edge_ratio, density_variance, temporal_change
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // CONSTANTS
+    // ============================================
+    const TOTAL_RULES = 262144;
+    const STORAGE_KEY = 'cells_survey_gpu';
+
+    // ============================================
+    // STATE
+    // ============================================
+    let results = [];
+    let completedSet = new Set();
+    let isRunning = false;
+    let isPaused = false;
+    let sessionStartTime = null;
+    let rulesThisSession = 0;
+    let recentResults = [];
+
+    // GPU state
+    let gpuDevice = null;
+    let gpuAvailable = false;
+
+    // Settings
+    let gridSize = 256;
+    let totalSteps = 2000;
+    let batchSize = 10;
+    let autosaveInterval = 1000;
+
+    // ============================================
+    // DOM ELEMENTS
+    // ============================================
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const elapsedTime = document.getElementById('elapsed-time');
+    const rateEl = document.getElementById('rate');
+    const etaEl = document.getElementById('eta');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnResume = document.getElementById('btn-resume');
+    const btnDownload = document.getElementById('btn-download');
+    const btnClear = document.getElementById('btn-clear');
+    const resultsBody = document.getElementById('results-body');
+    const logEl = document.getElementById('log');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    const errorBanner = document.getElementById('error-banner');
+
+    // ============================================
+    // LOGGING
+    // ============================================
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      if (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+    }
+
+    function showError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.style.display = 'block';
+    }
+
+    // ============================================
+    // WEBGPU SHADERS
+    // ============================================
+
+    // Main CA simulation shader - also counts births/deaths/population per workgroup
+    const caShaderCode = `
+      struct Uniforms {
+        size: u32,
+        birthMask: u32,
+        survivalMask: u32,
+        step: u32,
+      }
+
+      struct AtomicCounters {
+        population: atomic<u32>,
+        births: atomic<u32>,
+        deaths: atomic<u32>,
+        changes: atomic<u32>,
+      }
+
+      @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+      @group(0) @binding(1) var<storage, read> gridIn: array<u32>;
+      @group(0) @binding(2) var<storage, read_write> gridOut: array<u32>;
+      @group(0) @binding(3) var<storage, read_write> counters: AtomicCounters;
+
+      @compute @workgroup_size(16, 16)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let size = uniforms.size;
+        if (gid.x >= size || gid.y >= size) { return; }
+
+        var neighbors: u32 = 0;
+
+        for (var dy: i32 = -1; dy <= 1; dy++) {
+          for (var dx: i32 = -1; dx <= 1; dx++) {
+            if (dx == 0 && dy == 0) { continue; }
+            let nx = (i32(gid.x) + dx + i32(size)) % i32(size);
+            let ny = (i32(gid.y) + dy + i32(size)) % i32(size);
+            if (gridIn[u32(ny) * size + u32(nx)] > 0u) { neighbors++; }
+          }
+        }
+
+        let idx = gid.y * size + gid.x;
+        let wasAlive = gridIn[idx] > 0u;
+
+        var isAlive: bool = false;
+        if (wasAlive) {
+          isAlive = (uniforms.survivalMask & (1u << neighbors)) != 0u;
+        } else {
+          isAlive = (uniforms.birthMask & (1u << neighbors)) != 0u;
+        }
+
+        gridOut[idx] = select(0u, 1u, isAlive);
+
+        // Count stats using atomics
+        if (isAlive) {
+          atomicAdd(&counters.population, 1u);
+        }
+        if (!wasAlive && isAlive) {
+          atomicAdd(&counters.births, 1u);
+          atomicAdd(&counters.changes, 1u);
+        }
+        if (wasAlive && !isAlive) {
+          atomicAdd(&counters.deaths, 1u);
+          atomicAdd(&counters.changes, 1u);
+        }
+      }
+    `;
+
+    // Shader to compute spatial metrics from final grid (clusters, edges, density variance)
+    const spatialAnalysisShaderCode = `
+      struct Uniforms {
+        size: u32,
+        regionSize: u32,  // for density variance calculation
+        pad1: u32,
+        pad2: u32,
+      }
+
+      struct SpatialCounters {
+        edgeCells: atomic<u32>,
+        totalAlive: atomic<u32>,
+      }
+
+      @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+      @group(0) @binding(1) var<storage, read> grid: array<u32>;
+      @group(0) @binding(2) var<storage, read_write> counters: SpatialCounters;
+      @group(0) @binding(3) var<storage, read_write> regionDensities: array<u32>;  // Fixed point * 1000
+
+      @compute @workgroup_size(16, 16)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let size = uniforms.size;
+        if (gid.x >= size || gid.y >= size) { return; }
+
+        let idx = gid.y * size + gid.x;
+        let alive = grid[idx] > 0u;
+
+        if (alive) {
+          atomicAdd(&counters.totalAlive, 1u);
+
+          // Check if edge cell (has dead neighbor)
+          var hasDeadNeighbor: bool = false;
+          for (var dy: i32 = -1; dy <= 1; dy++) {
+            for (var dx: i32 = -1; dx <= 1; dx++) {
+              if (dx == 0 && dy == 0) { continue; }
+              let nx = (i32(gid.x) + dx + i32(size)) % i32(size);
+              let ny = (i32(gid.y) + dy + i32(size)) % i32(size);
+              if (grid[u32(ny) * size + u32(nx)] == 0u) {
+                hasDeadNeighbor = true;
+              }
+            }
+          }
+          if (hasDeadNeighbor) {
+            atomicAdd(&counters.edgeCells, 1u);
+          }
+        }
+      }
+
+      // Separate entry point for region density calculation
+      @compute @workgroup_size(16, 16)
+      fn calcRegionDensity(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let size = uniforms.size;
+        let regionSize = uniforms.regionSize;
+        let regionsPerSide = size / regionSize;
+
+        if (gid.x >= regionsPerSide || gid.y >= regionsPerSide) { return; }
+
+        var count: u32 = 0u;
+        let startX = gid.x * regionSize;
+        let startY = gid.y * regionSize;
+
+        for (var y: u32 = 0u; y < regionSize; y++) {
+          for (var x: u32 = 0u; x < regionSize; x++) {
+            let idx = (startY + y) * size + (startX + x);
+            if (grid[idx] > 0u) { count++; }
+          }
+        }
+
+        // Store as fixed point (count * 1000 / regionSize^2)
+        let density = (count * 1000u) / (regionSize * regionSize);
+        regionDensities[gid.y * regionsPerSide + gid.x] = density;
+      }
+    `;
+
+    // Frequency detection shader - runs consecutive steps, stores population, computes autocorrelation
+    const frequencyShaderCode = `
+      struct FreqUniforms {
+        size: u32,
+        birthMask: u32,
+        survivalMask: u32,
+        historyLength: u32,  // number of samples to analyze
+        maxLag: u32,         // maximum lag for autocorrelation
+        pad1: u32,
+        pad2: u32,
+        pad3: u32,
+      }
+
+      @group(0) @binding(0) var<uniform> uniforms: FreqUniforms;
+      @group(0) @binding(1) var<storage, read> popHistory: array<u32>;  // population at each step
+      @group(0) @binding(2) var<storage, read_write> autocorr: array<f32>;  // autocorrelation for each lag
+
+      @compute @workgroup_size(64)
+      fn computeAutocorr(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let lag = gid.x + 1u;  // lag 1 to maxLag
+        if (lag > uniforms.maxLag) { return; }
+
+        let n = uniforms.historyLength;
+
+        // Compute mean
+        var sum: f32 = 0.0;
+        for (var i: u32 = 0u; i < n; i++) {
+          sum += f32(popHistory[i]);
+        }
+        let mean = sum / f32(n);
+
+        // Compute variance
+        var variance: f32 = 0.0;
+        for (var i: u32 = 0u; i < n; i++) {
+          let diff = f32(popHistory[i]) - mean;
+          variance += diff * diff;
+        }
+
+        if (variance < 0.001) {
+          // Constant population - period 1
+          autocorr[lag - 1u] = select(0.0, 1.0, lag == 1u);
+          return;
+        }
+
+        // Compute autocorrelation at this lag
+        var corr: f32 = 0.0;
+        for (var i: u32 = 0u; i < n - lag; i++) {
+          corr += (f32(popHistory[i]) - mean) * (f32(popHistory[i + lag]) - mean);
+        }
+
+        autocorr[lag - 1u] = corr / variance;
+      }
+    `;
+
+    // Pipeline and buffer references
+    let caPipeline = null;
+    let spatialPipeline = null;
+    let regionDensityPipeline = null;
+    let frequencyPipeline = null;
+
+    let gridBufferA = null;
+    let gridBufferB = null;
+    let uniformBuffer = null;
+    let counterBuffer = null;
+    let spatialUniformBuffer = null;
+    let spatialCounterBuffer = null;
+    let regionDensityBuffer = null;
+    let statsReadBuffer = null;
+    let gridReadBuffer = null;
+
+    // Frequency detection buffers
+    let freqUniformBuffer = null;
+    let freqPopHistoryBuffer = null;
+    let freqAutocorrBuffer = null;
+    let freqAutocorrReadBuffer = null;
+
+    // Stats history buffer (CPU side, filled incrementally)
+    let popHistory = null;
+    let birthHistory = null;
+    let deathHistory = null;
+    let changeHistory = null;
+
+    async function initWebGPU() {
+      if (!navigator.gpu) {
+        showError('WebGPU not supported in this browser. Please use Chrome, Edge, or Safari.');
+        log('WebGPU not supported', 'error');
+        return false;
+      }
+
+      try {
+        const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        if (!adapter) {
+          showError('No GPU adapter found.');
+          log('No GPU adapter', 'error');
+          return false;
+        }
+
+        gpuDevice = await adapter.requestDevice();
+
+        // Create CA pipeline
+        const caModule = gpuDevice.createShaderModule({ code: caShaderCode });
+        caPipeline = gpuDevice.createComputePipeline({
+          layout: 'auto',
+          compute: { module: caModule, entryPoint: 'main' }
+        });
+
+        // Create spatial analysis pipeline
+        const spatialModule = gpuDevice.createShaderModule({ code: spatialAnalysisShaderCode });
+        spatialPipeline = gpuDevice.createComputePipeline({
+          layout: 'auto',
+          compute: { module: spatialModule, entryPoint: 'main' }
+        });
+        regionDensityPipeline = gpuDevice.createComputePipeline({
+          layout: 'auto',
+          compute: { module: spatialModule, entryPoint: 'calcRegionDensity' }
+        });
+
+        // Create frequency detection pipeline
+        const freqModule = gpuDevice.createShaderModule({ code: frequencyShaderCode });
+        frequencyPipeline = gpuDevice.createComputePipeline({
+          layout: 'auto',
+          compute: { module: freqModule, entryPoint: 'computeAutocorr' }
+        });
+
+        log('WebGPU initialized with GPU stats + frequency detection', 'success');
+        gpuAvailable = true;
+        return true;
+      } catch (e) {
+        showError('WebGPU initialization failed: ' + e.message);
+        log('WebGPU init failed: ' + e.message, 'error');
+        return false;
+      }
+    }
+
+    function createBuffers(size, maxSteps) {
+      const gridBufferSize = size * size * 4;
+      const regionSize = 16;
+      const regionsPerSide = Math.floor(size / regionSize);
+      const regionCount = regionsPerSide * regionsPerSide;
+
+      // Grid buffers (ping-pong)
+      gridBufferA = gpuDevice.createBuffer({
+        size: gridBufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+      gridBufferB = gpuDevice.createBuffer({
+        size: gridBufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+
+      // Uniforms for CA shader
+      uniformBuffer = gpuDevice.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      // Atomic counters for per-step stats (population, births, deaths, changes)
+      counterBuffer = gpuDevice.createBuffer({
+        size: 16, // 4 u32 atomics
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+
+      // Spatial analysis buffers
+      spatialUniformBuffer = gpuDevice.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      spatialCounterBuffer = gpuDevice.createBuffer({
+        size: 8, // edgeCells, totalAlive
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+      regionDensityBuffer = gpuDevice.createBuffer({
+        size: regionCount * 4,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+
+      // Read buffers
+      statsReadBuffer = gpuDevice.createBuffer({
+        size: Math.max(16, regionCount * 4),
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+      gridReadBuffer = gpuDevice.createBuffer({
+        size: gridBufferSize,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+
+      // Frequency detection buffers
+      const freqHistoryLength = 128;  // samples for frequency detection
+      const freqMaxLag = 64;          // maximum period we can detect
+
+      freqUniformBuffer = gpuDevice.createBuffer({
+        size: 32,  // 8 u32s
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      freqPopHistoryBuffer = gpuDevice.createBuffer({
+        size: freqHistoryLength * 4,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      });
+      freqAutocorrBuffer = gpuDevice.createBuffer({
+        size: freqMaxLag * 4,  // f32 per lag
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+      freqAutocorrReadBuffer = gpuDevice.createBuffer({
+        size: freqMaxLag * 4,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+
+      // CPU-side history arrays - initialize with sentinel value
+      popHistory = new Uint32Array(maxSteps + 1);
+      birthHistory = new Uint32Array(maxSteps + 1);
+      deathHistory = new Uint32Array(maxSteps + 1);
+      changeHistory = new Uint32Array(maxSteps + 1);
+
+      // Fill with sentinel value (0xFFFFFFFF = "not sampled")
+      popHistory.fill(0xFFFFFFFF);
+      birthHistory.fill(0xFFFFFFFF);
+      deathHistory.fill(0xFFFFFFFF);
+      changeHistory.fill(0xFFFFFFFF);
+    }
+
+    function destroyBuffers() {
+      gridBufferA?.destroy();
+      gridBufferB?.destroy();
+      uniformBuffer?.destroy();
+      counterBuffer?.destroy();
+      spatialUniformBuffer?.destroy();
+      spatialCounterBuffer?.destroy();
+      regionDensityBuffer?.destroy();
+      freqUniformBuffer?.destroy();
+      freqPopHistoryBuffer?.destroy();
+      freqAutocorrBuffer?.destroy();
+      freqAutocorrReadBuffer?.destroy();
+      statsReadBuffer?.destroy();
+      gridReadBuffer?.destroy();
+      popHistory = null;
+      birthHistory = null;
+      deathHistory = null;
+      changeHistory = null;
+    }
+
+    // ============================================
+    // SEEDED RANDOM
+    // ============================================
+    function seededRandom(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    // ============================================
+    // RULE HELPERS
+    // ============================================
+    function ruleIdToMasks(ruleId) {
+      const birthMask = Math.floor(ruleId / 512);
+      const survivalMask = ruleId % 512;
+      return { birthMask, survivalMask };
+    }
+
+    function ruleIdToString(ruleId) {
+      const { birthMask, survivalMask } = ruleIdToMasks(ruleId);
+      let b = '', s = '';
+      for (let i = 0; i <= 8; i++) {
+        if (birthMask & (1 << i)) b += i;
+        if (survivalMask & (1 << i)) s += i;
+      }
+      return `B${b}/S${s}`;
+    }
+
+    // ============================================
+    // GPU SIMULATION WITH STATS
+    // ============================================
+    async function runGPUSimulation(ruleId, size, steps) {
+      const { birthMask, survivalMask } = ruleIdToMasks(ruleId);
+      const seed = ruleId * 7919;
+      const rng = seededRandom(seed);
+
+      // Initialize grid on CPU
+      const initialGrid = new Uint32Array(size * size);
+      let initialPop = 0;
+      for (let i = 0; i < initialGrid.length; i++) {
+        if (rng() < 0.3) {
+          initialGrid[i] = 1;
+          initialPop++;
+        } else {
+          initialGrid[i] = 0;
+        }
+      }
+
+      // Upload initial grid to GPU
+      gpuDevice.queue.writeBuffer(gridBufferA, 0, initialGrid);
+
+      // Create bind groups for ping-pong
+      const caBindGroupA = gpuDevice.createBindGroup({
+        layout: caPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: gridBufferA } },
+          { binding: 2, resource: { buffer: gridBufferB } },
+          { binding: 3, resource: { buffer: counterBuffer } },
+        ],
+      });
+
+      const caBindGroupB = gpuDevice.createBindGroup({
+        layout: caPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: gridBufferB } },
+          { binding: 2, resource: { buffer: gridBufferA } },
+          { binding: 3, resource: { buffer: counterBuffer } },
+        ],
+      });
+
+      const workgroups = Math.ceil(size / 16);
+      let currentBuffer = 0;
+
+      // Record initial population
+      popHistory[0] = initialPop;
+      birthHistory[0] = 0;
+      deathHistory[0] = 0;
+      changeHistory[0] = 0;
+
+      // Batch size for reading stats (read every N steps to reduce sync overhead)
+      const statsBatchSize = 50;
+      let pendingSteps = [];
+
+      // Run simulation with GPU stats collection
+      for (let step = 0; step < steps; step++) {
+        // Reset counters for this step
+        gpuDevice.queue.writeBuffer(counterBuffer, 0, new Uint32Array([0, 0, 0, 0]));
+
+        // Update uniforms with current step
+        const uniformData = new Uint32Array([size, birthMask, survivalMask, step]);
+        gpuDevice.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+        // Run CA step
+        const commandEncoder = gpuDevice.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(caPipeline);
+        computePass.setBindGroup(0, currentBuffer === 0 ? caBindGroupA : caBindGroupB);
+        computePass.dispatchWorkgroups(workgroups, workgroups);
+        computePass.end();
+
+        // Copy counters to read buffer
+        commandEncoder.copyBufferToBuffer(counterBuffer, 0, statsReadBuffer, 0, 16);
+        gpuDevice.queue.submit([commandEncoder.finish()]);
+
+        currentBuffer = 1 - currentBuffer;
+        pendingSteps.push(step + 1);
+
+        // Read stats in batches to reduce CPU-GPU sync overhead
+        if (pendingSteps.length >= statsBatchSize || step === steps - 1) {
+          await gpuDevice.queue.onSubmittedWorkDone();
+
+          // Read the most recent counters (we only get the last step's stats this way)
+          // For full history, we'd need a different approach - let's read each step
+          await statsReadBuffer.mapAsync(GPUMapMode.READ);
+          const statsData = new Uint32Array(statsReadBuffer.getMappedRange().slice(0));
+          statsReadBuffer.unmap();
+
+          // Store stats for the last step in this batch
+          // (intermediate steps remain as sentinel - already initialized)
+          const lastStep = pendingSteps[pendingSteps.length - 1];
+          popHistory[lastStep] = statsData[0];
+          birthHistory[lastStep] = statsData[1];
+          deathHistory[lastStep] = statsData[2];
+          changeHistory[lastStep] = statsData[3];
+
+          pendingSteps = [];
+        }
+      }
+
+      // Now read the final grid for spatial analysis
+      await gpuDevice.queue.onSubmittedWorkDone();
+      const finalGridBuffer = currentBuffer === 0 ? gridBufferA : gridBufferB;
+
+      // Copy final grid to read buffer
+      const copyEncoder = gpuDevice.createCommandEncoder();
+      copyEncoder.copyBufferToBuffer(finalGridBuffer, 0, gridReadBuffer, 0, size * size * 4);
+      gpuDevice.queue.submit([copyEncoder.finish()]);
+
+      await gridReadBuffer.mapAsync(GPUMapMode.READ);
+      const finalGrid = new Uint32Array(gridReadBuffer.getMappedRange().slice(0));
+      gridReadBuffer.unmap();
+
+      // Run spatial analysis on GPU
+      const regionSize = 16;
+      const regionsPerSide = Math.floor(size / regionSize);
+
+      // Reset spatial counters
+      gpuDevice.queue.writeBuffer(spatialCounterBuffer, 0, new Uint32Array([0, 0]));
+      gpuDevice.queue.writeBuffer(spatialUniformBuffer, 0, new Uint32Array([size, regionSize, 0, 0]));
+
+      // Create spatial bind group
+      const spatialBindGroup = gpuDevice.createBindGroup({
+        layout: spatialPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: spatialUniformBuffer } },
+          { binding: 1, resource: { buffer: finalGridBuffer } },
+          { binding: 2, resource: { buffer: spatialCounterBuffer } },
+          { binding: 3, resource: { buffer: regionDensityBuffer } },
+        ],
+      });
+
+      // Run edge detection
+      const spatialEncoder = gpuDevice.createCommandEncoder();
+      const spatialPass = spatialEncoder.beginComputePass();
+      spatialPass.setPipeline(spatialPipeline);
+      spatialPass.setBindGroup(0, spatialBindGroup);
+      spatialPass.dispatchWorkgroups(workgroups, workgroups);
+      spatialPass.end();
+      spatialEncoder.copyBufferToBuffer(spatialCounterBuffer, 0, statsReadBuffer, 0, 8);
+      gpuDevice.queue.submit([spatialEncoder.finish()]);
+
+      await statsReadBuffer.mapAsync(GPUMapMode.READ);
+      const spatialStats = new Uint32Array(statsReadBuffer.getMappedRange().slice(0, 8));
+      statsReadBuffer.unmap();
+
+      const edgeCells = spatialStats[0];
+      const totalAlive = spatialStats[1];
+
+      // Run region density calculation
+      const regionBindGroup = gpuDevice.createBindGroup({
+        layout: regionDensityPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: spatialUniformBuffer } },
+          { binding: 1, resource: { buffer: finalGridBuffer } },
+          { binding: 2, resource: { buffer: spatialCounterBuffer } },
+          { binding: 3, resource: { buffer: regionDensityBuffer } },
+        ],
+      });
+
+      const regionEncoder = gpuDevice.createCommandEncoder();
+      const regionPass = regionEncoder.beginComputePass();
+      regionPass.setPipeline(regionDensityPipeline);
+      regionPass.setBindGroup(0, regionBindGroup);
+      regionPass.dispatchWorkgroups(Math.ceil(regionsPerSide / 16), Math.ceil(regionsPerSide / 16));
+      regionPass.end();
+      regionEncoder.copyBufferToBuffer(regionDensityBuffer, 0, statsReadBuffer, 0, regionsPerSide * regionsPerSide * 4);
+      gpuDevice.queue.submit([regionEncoder.finish()]);
+
+      await statsReadBuffer.mapAsync(GPUMapMode.READ);
+      const regionDensities = new Uint32Array(statsReadBuffer.getMappedRange().slice(0, regionsPerSide * regionsPerSide * 4));
+      statsReadBuffer.unmap();
+
+      // ============================================
+      // FREQUENCY DETECTION PASS
+      // Run additional steps to collect fine-grained population history,
+      // then compute autocorrelation on GPU to detect oscillation period
+      // ============================================
+      const freqHistoryLength = 128;
+      const freqMaxLag = 64;
+      let detectedPeriod = 0;
+      let periodConfidence = 0;
+
+      // Only run frequency detection if population is non-zero
+      if (totalAlive > 0) {
+        const freqPopHistory = new Uint32Array(freqHistoryLength);
+
+        // Run freqHistoryLength additional steps, recording population each step
+        for (let i = 0; i < freqHistoryLength; i++) {
+          // Reset counters
+          gpuDevice.queue.writeBuffer(counterBuffer, 0, new Uint32Array([0, 0, 0, 0]));
+
+          // Update uniforms
+          const uniformData = new Uint32Array([size, birthMask, survivalMask, steps + i]);
+          gpuDevice.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+          // Run CA step
+          const commandEncoder = gpuDevice.createCommandEncoder();
+          const computePass = commandEncoder.beginComputePass();
+          computePass.setPipeline(caPipeline);
+          computePass.setBindGroup(0, currentBuffer === 0 ? caBindGroupA : caBindGroupB);
+          computePass.dispatchWorkgroups(workgroups, workgroups);
+          computePass.end();
+          commandEncoder.copyBufferToBuffer(counterBuffer, 0, statsReadBuffer, 0, 4);
+          gpuDevice.queue.submit([commandEncoder.finish()]);
+
+          currentBuffer = 1 - currentBuffer;
+
+          // Read population for this step
+          await statsReadBuffer.mapAsync(GPUMapMode.READ);
+          freqPopHistory[i] = new Uint32Array(statsReadBuffer.getMappedRange().slice(0, 4))[0];
+          statsReadBuffer.unmap();
+        }
+
+        // Upload population history to GPU
+        gpuDevice.queue.writeBuffer(freqPopHistoryBuffer, 0, freqPopHistory);
+
+        // Set up frequency uniforms
+        const freqUniforms = new Uint32Array([size, birthMask, survivalMask, freqHistoryLength, freqMaxLag, 0, 0, 0]);
+        gpuDevice.queue.writeBuffer(freqUniformBuffer, 0, freqUniforms);
+
+        // Create bind group for autocorrelation
+        const freqBindGroup = gpuDevice.createBindGroup({
+          layout: frequencyPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: { buffer: freqUniformBuffer } },
+            { binding: 1, resource: { buffer: freqPopHistoryBuffer } },
+            { binding: 2, resource: { buffer: freqAutocorrBuffer } },
+          ],
+        });
+
+        // Run autocorrelation compute
+        const freqEncoder = gpuDevice.createCommandEncoder();
+        const freqPass = freqEncoder.beginComputePass();
+        freqPass.setPipeline(frequencyPipeline);
+        freqPass.setBindGroup(0, freqBindGroup);
+        freqPass.dispatchWorkgroups(Math.ceil(freqMaxLag / 64));
+        freqPass.end();
+        freqEncoder.copyBufferToBuffer(freqAutocorrBuffer, 0, freqAutocorrReadBuffer, 0, freqMaxLag * 4);
+        gpuDevice.queue.submit([freqEncoder.finish()]);
+
+        // Read autocorrelation results
+        await freqAutocorrReadBuffer.mapAsync(GPUMapMode.READ);
+        const autocorr = new Float32Array(freqAutocorrReadBuffer.getMappedRange().slice(0, freqMaxLag * 4));
+        freqAutocorrReadBuffer.unmap();
+
+        // Find first significant peak in autocorrelation
+        for (let lag = 1; lag < freqMaxLag - 1; lag++) {
+          const prev = autocorr[lag - 1];
+          const curr = autocorr[lag];
+          const next = autocorr[lag + 1];
+
+          // Is this a peak with significant correlation?
+          if (curr > prev && curr > next && curr > 0.5 && curr > periodConfidence) {
+            detectedPeriod = lag + 1;  // lag is 0-indexed, period is 1-indexed
+            periodConfidence = curr;
+            break;  // Take first significant peak
+          }
+        }
+
+        // Check for constant population (period 1)
+        if (detectedPeriod === 0) {
+          const variance = freqPopHistory.reduce((sum, p) => {
+            const mean = freqPopHistory.reduce((a, b) => a + b, 0) / freqHistoryLength;
+            return sum + (p - mean) ** 2;
+          }, 0) / freqHistoryLength;
+
+          if (variance < 1) {
+            detectedPeriod = 1;
+            periodConfidence = 1;
+          }
+        }
+      }
+
+      // Return all collected data
+      return {
+        finalGrid,
+        popHistory: popHistory.slice(0, steps + 1),
+        birthHistory: birthHistory.slice(0, steps + 1),
+        deathHistory: deathHistory.slice(0, steps + 1),
+        changeHistory: changeHistory.slice(0, steps + 1),
+        edgeCells,
+        totalAlive,
+        regionDensities: Array.from(regionDensities),
+        size,
+        steps,
+        detectedPeriod,
+        periodConfidence
+      };
+    }
+
+    // ============================================
+    // MEASUREMENTS (from GPU-collected data)
+    // ============================================
+    function measureFromGPUData(gpuData, ruleId) {
+      const { finalGrid, popHistory, birthHistory, deathHistory, changeHistory,
+              edgeCells, totalAlive, regionDensities, size, steps,
+              detectedPeriod, periodConfidence: gpuPeriodConfidence } = gpuData;
+
+      // Rule properties
+      const { birthMask, survivalMask } = ruleIdToMasks(ruleId);
+      const birthCount = countBits(birthMask);
+      const survivalCount = countBits(survivalMask);
+      const hasB0 = (birthMask & 1) !== 0;
+
+      // Extract valid population samples (filter out sentinel values)
+      const validPops = [];
+      const validSteps = [];
+      for (let i = 0; i <= steps; i++) {
+        if (popHistory[i] !== undefined && popHistory[i] !== 0xFFFFFFFF) {
+          validPops.push(popHistory[i]);
+          validSteps.push(i);
+        }
+      }
+
+      // Debug: log sample counts occasionally
+      if (ruleId % 1000 === 0) {
+        console.log(`Rule ${ruleId}: validPops=${validPops.length}, samples:`, validPops.slice(0, 5));
+      }
+
+      // Population statistics
+      const popFinal = totalAlive;
+      const popPeak = Math.max(...validPops, 0);
+      const popMin = Math.min(...validPops.filter(p => p > 0), popFinal || Infinity);
+      const popMean = validPops.length > 0 ? validPops.reduce((a, b) => a + b, 0) / validPops.length : 0;
+
+      // Population standard deviation
+      const popVariance = validPops.length > 1
+        ? validPops.reduce((sum, p) => sum + (p - popMean) ** 2, 0) / validPops.length
+        : 0;
+      const popStd = Math.sqrt(popVariance);
+
+      // Population trend (linear regression slope)
+      let popTrend = 0;
+      if (validPops.length >= 2) {
+        const n = validPops.length;
+        const sumX = validSteps.reduce((a, b) => a + b, 0);
+        const sumY = validPops.reduce((a, b) => a + b, 0);
+        const sumXY = validSteps.reduce((sum, x, i) => sum + x * validPops[i], 0);
+        const sumX2 = validSteps.reduce((sum, x) => sum + x * x, 0);
+        popTrend = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX || 1);
+      }
+
+      // Activity statistics from change history (use same valid steps)
+      const validChanges = [];
+      const validBirths = [];
+      const validDeaths = [];
+      for (let i = 0; i < validSteps.length; i++) {
+        const step = validSteps[i];
+        if (changeHistory[step] !== 0xFFFFFFFF) {
+          validChanges.push(changeHistory[step]);
+          validBirths.push(birthHistory[step] !== 0xFFFFFFFF ? birthHistory[step] : 0);
+          validDeaths.push(deathHistory[step] !== 0xFFFFFFFF ? deathHistory[step] : 0);
+        }
+      }
+      const activityMean = validChanges.length > 0
+        ? validChanges.reduce((a, b) => a + b, 0) / validChanges.length : 0;
+      const activityVariance = validChanges.length > 1
+        ? validChanges.reduce((sum, c) => sum + (c - activityMean) ** 2, 0) / validChanges.length : 0;
+      const activityStd = Math.sqrt(activityVariance);
+
+      // Total births and deaths (sum of all sampled values)
+      const totalBirths = validBirths.reduce((a, b) => a + b, 0);
+      const totalDeaths = validDeaths.reduce((a, b) => a + b, 0);
+      const totalChanges = validChanges.reduce((a, b) => a + b, 0);
+
+      // Check if extinct
+      if (popFinal === 0) {
+        // Find when it went extinct
+        let extinctionTime = steps;
+        for (let i = validPops.length - 1; i >= 0; i--) {
+          if (validPops[i] > 0) {
+            extinctionTime = validSteps[i];
+            break;
+          }
+        }
+
+        return {
+          rule_id: ruleId,
+          rule_string: ruleIdToString(ruleId),
+          birth_count: birthCount,
+          survival_count: survivalCount,
+          has_B0: hasB0 ? 1 : 0,
+          // Dynamics
+          lambda: -10,
+          lambda_std: 0,
+          D: 0,
+          D_r_squared: 0,
+          gamma: 0,
+          // Classification
+          classification: 'extinct',
+          period: 0,
+          period_confidence: 1,
+          // Population stats
+          pop_final: 0,
+          pop_peak: popPeak,
+          pop_min: 0,
+          pop_mean: popMean,
+          pop_std: popStd,
+          pop_trend: popTrend,
+          pop_t100: findPopAtStep(validPops, validSteps, 100),
+          pop_t500: findPopAtStep(validPops, validSteps, 500),
+          pop_t1000: findPopAtStep(validPops, validSteps, 1000),
+          // Activity stats
+          activity_mean: activityMean,
+          activity_std: activityStd,
+          total_births: totalBirths,
+          total_deaths: totalDeaths,
+          // Timing
+          time_to_settle: -1,
+          extinction_time: extinctionTime,
+          // Spatial (all zero for extinct)
+          cluster_count: 0,
+          largest_cluster_ratio: 0,
+          edge_ratio: 0,
+          density_variance: 0,
+          temporal_change: 0
+        };
+      }
+
+      // Fractal dimension (box counting) with R-squared
+      const { D, rSquared: D_r_squared } = measureDimensionFromArray(finalGrid, size);
+
+      // Cluster analysis (still needs CPU for flood fill)
+      const clusters = measureClustersFromArray(finalGrid, size);
+
+      // Edge ratio from GPU data
+      const edgeRatio = totalAlive > 0 ? edgeCells / totalAlive : 0;
+
+      // Density variance from region densities
+      let densityVariance = 0;
+      if (regionDensities.length > 1) {
+        const densities = regionDensities.map(d => d / 1000); // Convert back from fixed point
+        const meanDensity = densities.reduce((a, b) => a + b, 0) / densities.length;
+        densityVariance = densities.reduce((sum, d) => sum + (d - meanDensity) ** 2, 0) / densities.length;
+      }
+
+      // Use GPU-detected period (more accurate, samples every step)
+      const period = detectedPeriod || 0;
+      const periodConfidence = gpuPeriodConfidence || 0;
+
+      // Classification based on activity and period
+      let classification = 'aperiodic';
+      let timeToSettle = -1;
+
+      if (period === 1 && activityMean < size * 0.01) {
+        classification = 'fixed';
+        // Find settle time
+        for (let i = 1; i < validChanges.length; i++) {
+          if (validChanges[i] === 0) {
+            timeToSettle = validSteps[i];
+            break;
+          }
+        }
+      } else if (period > 1 && periodConfidence > 0.5) {
+        classification = 'periodic';
+      }
+
+      // Lambda estimate from population dynamics
+      let lambda = 0, lambda_std = 0;
+      if (validPops.length >= 3) {
+        const lambdas = [];
+        for (let i = 1; i < validPops.length; i++) {
+          const p0 = validPops[i - 1];
+          const p1 = validPops[i];
+          const dt = validSteps[i] - validSteps[i - 1];
+          if (p0 > 0 && dt > 0) {
+            lambdas.push(Math.log(Math.max(1, p1) / Math.max(1, p0)) / dt);
+          }
+        }
+        if (lambdas.length > 0) {
+          lambda = lambdas.reduce((a, b) => a + b, 0) / lambdas.length;
+          lambda_std = lambdas.length > 1
+            ? Math.sqrt(lambdas.reduce((sum, l) => sum + (l - lambda) ** 2, 0) / lambdas.length)
+            : 0;
+        }
+      }
+
+      // Gamma - complexity/cluster growth rate
+      // Compare early vs late cluster counts
+      const earlyGrid = validPops.length > 2 ? null : null; // We don't have intermediate grids
+      // Simplified: use activity as proxy for complexity growth
+      const gamma = activityStd > 0 ? activityMean / activityStd : 0;
+
+      // Temporal change (from last recorded change)
+      const temporalChange = validChanges.length > 0 ? validChanges[validChanges.length - 1] : 0;
+
+      return {
+        rule_id: ruleId,
+        rule_string: ruleIdToString(ruleId),
+        birth_count: birthCount,
+        survival_count: survivalCount,
+        has_B0: hasB0 ? 1 : 0,
+        // Dynamics
+        lambda,
+        lambda_std,
+        D,
+        D_r_squared,
+        gamma,
+        // Classification
+        classification,
+        period,
+        period_confidence: periodConfidence,
+        // Population stats
+        pop_final: popFinal,
+        pop_peak: popPeak,
+        pop_min: popMin === Infinity ? 0 : popMin,
+        pop_mean: popMean,
+        pop_std: popStd,
+        pop_trend: popTrend,
+        pop_t100: findPopAtStep(validPops, validSteps, 100),
+        pop_t500: findPopAtStep(validPops, validSteps, 500),
+        pop_t1000: findPopAtStep(validPops, validSteps, 1000),
+        // Activity stats
+        activity_mean: activityMean,
+        activity_std: activityStd,
+        total_births: totalBirths,
+        total_deaths: totalDeaths,
+        // Timing
+        time_to_settle: timeToSettle,
+        extinction_time: -1,
+        // Spatial
+        cluster_count: clusters.count,
+        largest_cluster_ratio: clusters.largestRatio,
+        edge_ratio: edgeRatio,
+        density_variance: densityVariance,
+        temporal_change: temporalChange
+      };
+    }
+
+    // Helper: find population at a specific step (interpolate if needed)
+    function findPopAtStep(pops, steps, targetStep) {
+      for (let i = 0; i < steps.length; i++) {
+        if (steps[i] === targetStep) return pops[i];
+        if (steps[i] > targetStep && i > 0) {
+          // Linear interpolation
+          const t = (targetStep - steps[i-1]) / (steps[i] - steps[i-1]);
+          return Math.round(pops[i-1] + t * (pops[i] - pops[i-1]));
+        }
+      }
+      return pops[pops.length - 1] || 0;
+    }
+
+    // Period detection via autocorrelation
+    function detectPeriod(pops) {
+      if (pops.length < 10) return { period: 0, confidence: 0 };
+
+      // Use the last portion of the history for stability
+      const n = Math.min(pops.length, 200);
+      const data = pops.slice(-n);
+
+      // Compute mean
+      const mean = data.reduce((a, b) => a + b, 0) / n;
+
+      // Compute autocorrelation for lags 1-50
+      const maxLag = Math.min(50, Math.floor(n / 4));
+      const autocorr = [];
+
+      let variance = 0;
+      for (let i = 0; i < n; i++) {
+        variance += (data[i] - mean) ** 2;
+      }
+      if (variance === 0) return { period: 1, confidence: 1 }; // Constant = period 1
+
+      for (let lag = 1; lag <= maxLag; lag++) {
+        let sum = 0;
+        for (let i = 0; i < n - lag; i++) {
+          sum += (data[i] - mean) * (data[i + lag] - mean);
+        }
+        autocorr.push({ lag, value: sum / variance });
+      }
+
+      // Find first significant peak (excluding lag 0)
+      let bestLag = 0;
+      let bestValue = 0;
+      for (let i = 1; i < autocorr.length - 1; i++) {
+        const prev = autocorr[i - 1].value;
+        const curr = autocorr[i].value;
+        const next = autocorr[i + 1].value;
+
+        // Is this a peak?
+        if (curr > prev && curr > next && curr > bestValue && curr > 0.3) {
+          bestValue = curr;
+          bestLag = autocorr[i].lag;
+        }
+      }
+
+      // If no clear peak found, check if it's stable (period 1)
+      if (bestLag === 0) {
+        // Check if variance is very low
+        const relativeVar = Math.sqrt(variance / n) / (mean || 1);
+        if (relativeVar < 0.01) {
+          return { period: 1, confidence: 0.9 };
+        }
+        return { period: 0, confidence: 0 };
+      }
+
+      return { period: bestLag, confidence: bestValue };
+    }
+
+    function countBits(n) {
+      let count = 0;
+      while (n) {
+        count += n & 1;
+        n >>= 1;
+      }
+      return count;
+    }
+
+    function measureDimensionFromArray(grid, size) {
+      const scales = [1, 2, 4, 8, 16, 32];
+      const data = [];
+
+      for (const scale of scales) {
+        if (scale > size / 2) continue;
+        let count = 0;
+        const boxSize = Math.ceil(size / scale);
+
+        for (let by = 0; by < boxSize; by++) {
+          for (let bx = 0; bx < boxSize; bx++) {
+            let hasLife = false;
+            for (let y = by * scale; y < Math.min((by + 1) * scale, size) && !hasLife; y++) {
+              for (let x = bx * scale; x < Math.min((bx + 1) * scale, size) && !hasLife; x++) {
+                if (grid[y * size + x] > 0) hasLife = true;
+              }
+            }
+            if (hasLife) count++;
+          }
+        }
+
+        if (count > 0) {
+          data.push({ logScale: Math.log(scale), logCount: Math.log(count) });
+        }
+      }
+
+      if (data.length < 2) return { D: 0, rSquared: 0 };
+
+      const n = data.length;
+      const sumX = data.reduce((s, d) => s + d.logScale, 0);
+      const sumY = data.reduce((s, d) => s + d.logCount, 0);
+      const sumXY = data.reduce((s, d) => s + d.logScale * d.logCount, 0);
+      const sumX2 = data.reduce((s, d) => s + d.logScale * d.logScale, 0);
+      const sumY2 = data.reduce((s, d) => s + d.logCount * d.logCount, 0);
+
+      const D = -(n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+
+      // Calculate R-squared for fit quality
+      const ssRes = data.reduce((sum, d) => {
+        const predicted = (sumY / n) + D * (d.logScale - sumX / n);
+        return sum + (d.logCount - predicted) ** 2;
+      }, 0);
+      const ssTot = data.reduce((sum, d) => sum + (d.logCount - sumY / n) ** 2, 0);
+      const rSquared = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+
+      return { D, rSquared };
+    }
+
+    function measureClustersFromArray(grid, size) {
+      const visited = new Uint8Array(size * size);
+      let clusterCount = 0;
+      let largestCluster = 0;
+      let totalPop = 0;
+
+      function floodFill(startIdx) {
+        const stack = [startIdx];
+        let clusterSize = 0;
+
+        while (stack.length > 0) {
+          const idx = stack.pop();
+          if (visited[idx]) continue;
+          if (grid[idx] === 0) continue;
+
+          visited[idx] = 1;
+          clusterSize++;
+
+          const y = Math.floor(idx / size);
+          const x = idx % size;
+
+          // 4-connected
+          const neighbors = [
+            ((y - 1 + size) % size) * size + x,
+            ((y + 1) % size) * size + x,
+            y * size + ((x - 1 + size) % size),
+            y * size + ((x + 1) % size)
+          ];
+
+          for (const nIdx of neighbors) {
+            if (!visited[nIdx] && grid[nIdx] > 0) {
+              stack.push(nIdx);
+            }
+          }
+        }
+
+        return clusterSize;
+      }
+
+      for (let i = 0; i < grid.length; i++) {
+        if (grid[i] > 0) {
+          totalPop++;
+          if (!visited[i]) {
+            const clusterSize = floodFill(i);
+            if (clusterSize > 0) {
+              clusterCount++;
+              if (clusterSize > largestCluster) largestCluster = clusterSize;
+            }
+          }
+        }
+      }
+
+      return {
+        count: clusterCount,
+        largestRatio: totalPop > 0 ? largestCluster / totalPop : 0
+      };
+    }
+
+    function measureEdgeRatioFromArray(grid, size) {
+      let edgeCells = 0;
+      let totalAlive = 0;
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const idx = y * size + x;
+          if (grid[idx] > 0) {
+            totalAlive++;
+            let hasDeadNeighbor = false;
+
+            for (let dy = -1; dy <= 1 && !hasDeadNeighbor; dy++) {
+              for (let dx = -1; dx <= 1 && !hasDeadNeighbor; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const ny = (y + dy + size) % size;
+                const nx = (x + dx + size) % size;
+                if (grid[ny * size + nx] === 0) hasDeadNeighbor = true;
+              }
+            }
+
+            if (hasDeadNeighbor) edgeCells++;
+          }
+        }
+      }
+
+      return totalAlive > 0 ? edgeCells / totalAlive : 0;
+    }
+
+    function measureDensityVarianceFromArray(grid, size) {
+      const regionSize = 16;
+      const regionCount = Math.floor(size / regionSize);
+      if (regionCount < 2) return 0;
+
+      const densities = [];
+
+      for (let ry = 0; ry < regionCount; ry++) {
+        for (let rx = 0; rx < regionCount; rx++) {
+          let count = 0;
+          for (let y = ry * regionSize; y < (ry + 1) * regionSize; y++) {
+            for (let x = rx * regionSize; x < (rx + 1) * regionSize; x++) {
+              if (grid[y * size + x] > 0) count++;
+            }
+          }
+          densities.push(count / (regionSize * regionSize));
+        }
+      }
+
+      const mean = densities.reduce((a, b) => a + b, 0) / densities.length;
+      const variance = densities.reduce((sum, d) => sum + (d - mean) ** 2, 0) / densities.length;
+
+      return variance;
+    }
+
+    // ============================================
+    // SURVEY LOOP
+    // ============================================
+    async function measureRule(ruleId) {
+      const gpuData = await runGPUSimulation(ruleId, gridSize, totalSteps);
+      return measureFromGPUData(gpuData, ruleId);
+    }
+
+    async function runSurvey() {
+      if (!gpuAvailable) {
+        log('GPU not available', 'error');
+        return;
+      }
+
+      isRunning = true;
+      isPaused = false;
+      sessionStartTime = Date.now();
+      rulesThisSession = 0;
+
+      btnStart.disabled = true;
+      btnPause.disabled = false;
+      btnResume.disabled = true;
+      btnDownload.disabled = false;
+
+      createBuffers(gridSize, totalSteps);
+      log(`Starting GPU survey: ${gridSize}x${gridSize}, ${totalSteps} steps (GPU stats enabled)`, 'success');
+
+      let lastUIUpdate = Date.now();
+      let lastAutosave = rulesThisSession;
+
+      for (let ruleId = 0; ruleId < TOTAL_RULES; ruleId++) {
+        if (!isRunning) break;
+
+        while (isPaused) {
+          await new Promise(r => setTimeout(r, 100));
+          if (!isRunning) break;
+        }
+
+        if (completedSet.has(ruleId)) continue;
+
+        try {
+          const result = await measureRule(ruleId);
+          results.push(result);
+          completedSet.add(ruleId);
+          rulesThisSession++;
+
+          // Update UI periodically
+          if (Date.now() - lastUIUpdate > 200) {
+            updateCurrentRule(result);
+            addResultToTable(result);
+            updateProgress();
+            lastUIUpdate = Date.now();
+          }
+
+          // Autosave
+          if (rulesThisSession - lastAutosave >= autosaveInterval) {
+            autoSaveToFile();
+            lastAutosave = rulesThisSession;
+          }
+
+        } catch (e) {
+          log(`Error measuring rule ${ruleId}: ${e.message}`, 'error');
+        }
+
+        // Yield to browser
+        if (ruleId % batchSize === 0) {
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+
+      destroyBuffers();
+      isRunning = false;
+      btnStart.disabled = false;
+      btnPause.disabled = true;
+      btnResume.disabled = true;
+
+      if (completedSet.size >= TOTAL_RULES) {
+        log('Survey complete!', 'success');
+      } else {
+        log(`Survey stopped at ${completedSet.size} rules`, 'warning');
+      }
+
+      updateProgress();
+    }
+
+    // ============================================
+    // UI UPDATES
+    // ============================================
+    function formatTime(ms) {
+      const s = Math.floor(ms / 1000);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+      const completed = completedSet.size;
+      const percent = (completed / TOTAL_RULES) * 100;
+      const elapsed = sessionStartTime ? Date.now() - sessionStartTime : 0;
+      const rate = elapsed > 0 ? rulesThisSession / (elapsed / 1000) : 0;
+      const remaining = TOTAL_RULES - completed;
+      const eta = rate > 0 ? remaining / rate * 1000 : 0;
+
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = `${completed.toLocaleString()} / ${TOTAL_RULES.toLocaleString()} (${percent.toFixed(1)}%)`;
+      elapsedTime.textContent = `Elapsed: ${formatTime(elapsed)}`;
+      rateEl.textContent = `${rate.toFixed(1)} rules/sec`;
+      etaEl.textContent = `ETA: ${rate > 0 ? formatTime(eta) : '--:--:--'}`;
+
+      document.getElementById('stat-completed').textContent = completed.toLocaleString();
+      document.getElementById('stat-remaining').textContent = remaining.toLocaleString();
+
+      // Aggregate statistics
+      const counts = { extinct: 0, fixed: 0, periodic: 0, aperiodic: 0 };
+      const sums = { lambda: 0, D: 0, gamma: 0, densvar: 0, edge: 0, largest: 0, pop: 0, cluster: 0 };
+      const byClass = {
+        extinct: { D: 0, pop: 0, cluster: 0, count: 0 },
+        fixed: { D: 0, pop: 0, cluster: 0, count: 0 },
+        periodic: { D: 0, pop: 0, cluster: 0, count: 0 },
+        aperiodic: { D: 0, pop: 0, cluster: 0, count: 0 }
+      };
+      let countLambda = 0, countB0 = 0;
+
+      for (const r of results) {
+        counts[r.classification]++;
+        if (r.lambda > -10) { sums.lambda += r.lambda; countLambda++; }
+        sums.D += r.D;
+        sums.gamma += r.gamma;
+        sums.densvar += r.density_variance;
+        sums.edge += r.edge_ratio;
+        sums.largest += r.largest_cluster_ratio;
+        sums.pop += r.pop_final;
+        sums.cluster += r.cluster_count;
+        if (r.has_B0) countB0++;
+
+        // By class averages
+        const cls = r.classification;
+        if (byClass[cls]) {
+          byClass[cls].D += r.D;
+          byClass[cls].pop += r.pop_final;
+          byClass[cls].cluster += r.cluster_count;
+          byClass[cls].count++;
+        }
+      }
+
+      const total = results.length || 1;
+
+      // Classification counts and bars
+      document.getElementById('class-extinct').textContent = counts.extinct.toLocaleString();
+      document.getElementById('class-fixed').textContent = counts.fixed.toLocaleString();
+      document.getElementById('class-periodic').textContent = counts.periodic.toLocaleString();
+      document.getElementById('class-aperiodic').textContent = counts.aperiodic.toLocaleString();
+
+      const maxCount = Math.max(counts.extinct, counts.fixed, counts.periodic, counts.aperiodic, 1);
+      document.getElementById('bar-extinct').style.width = `${(counts.extinct / maxCount) * 100}%`;
+      document.getElementById('bar-fixed').style.width = `${(counts.fixed / maxCount) * 100}%`;
+      document.getElementById('bar-periodic').style.width = `${(counts.periodic / maxCount) * 100}%`;
+      document.getElementById('bar-aperiodic').style.width = `${(counts.aperiodic / maxCount) * 100}%`;
+
+      // Global averages
+      document.getElementById('stat-lambda').textContent = countLambda > 0 ? (sums.lambda / countLambda).toFixed(4) : '--';
+      document.getElementById('stat-d').textContent = total > 0 ? (sums.D / total).toFixed(3) : '--';
+      document.getElementById('stat-gamma').textContent = total > 0 ? (sums.gamma / total).toFixed(2) : '--';
+      document.getElementById('stat-b0').textContent = countB0.toLocaleString();
+      document.getElementById('stat-densvar').textContent = total > 0 ? (sums.densvar / total).toFixed(4) : '--';
+      document.getElementById('stat-edge').textContent = total > 0 ? (sums.edge / total).toFixed(3) : '--';
+      document.getElementById('stat-largest').textContent = total > 0 ? ((sums.largest / total) * 100).toFixed(1) + '%' : '--';
+
+      // Update class averages
+      for (const cls of ['extinct', 'fixed', 'periodic', 'aperiodic']) {
+        const el = document.getElementById(`avg-${cls}`);
+        if (el && byClass[cls].count > 0) {
+          const c = byClass[cls];
+          el.innerHTML = `
+            <span style="width: 70px; color: ${cls === 'extinct' ? '#555' : cls === 'fixed' ? '#5a8a8a' : cls === 'periodic' ? '#8a8a5a' : '#8a5a8a'};">${cls.charAt(0).toUpperCase() + cls.slice(1)}</span>
+            <span style="width: 50px; text-align: right; color: #888;">${(c.D / c.count).toFixed(2)}</span>
+            <span style="width: 55px; text-align: right; color: #888;">${Math.round(c.pop / c.count).toLocaleString()}</span>
+            <span style="width: 50px; text-align: right; color: #888;">${Math.round(c.cluster / c.count)}</span>
+          `;
+        }
+      }
+    }
+
+    function updateCurrentRule(result) {
+      // Header
+      document.getElementById('current-rule').textContent = result.rule_string;
+      document.getElementById('current-id').textContent = result.rule_id;
+
+      // Flags
+      const classFlag = document.getElementById('current-class-flag');
+      classFlag.textContent = result.classification;
+      classFlag.className = `flag flag-class badge-${result.classification}`;
+
+      const b0Flag = document.getElementById('current-b0-flag');
+      b0Flag.style.display = result.has_B0 ? 'inline-block' : 'none';
+
+      // Row 1: Core dynamics
+      document.getElementById('current-lambda').textContent = result.lambda > -10 ? result.lambda.toFixed(4) : 'healed';
+      document.getElementById('current-lambda-std').textContent = result.lambda > -10 ? `± ${result.lambda_std.toFixed(4)}` : '';
+
+      document.getElementById('current-d').textContent = result.D.toFixed(3);
+      document.getElementById('current-d-r2').textContent = `R² ${((result.D_r_squared || 0) * 100).toFixed(0)}%`;
+
+      document.getElementById('current-period').textContent = result.period || '--';
+      document.getElementById('current-period-conf').textContent = result.period_confidence ? `conf ${(result.period_confidence * 100).toFixed(0)}%` : '';
+
+      // Row 2: Population
+      document.getElementById('current-pop-final').textContent = (result.pop_final || 0).toLocaleString();
+      document.getElementById('current-pop-peak').textContent = (result.pop_peak || 0).toLocaleString();
+      document.getElementById('current-pop-mean').textContent = result.pop_mean !== undefined ? result.pop_mean.toFixed(0) : '--';
+      document.getElementById('current-pop-std').textContent = result.pop_std !== undefined ? result.pop_std.toFixed(0) : '--';
+      document.getElementById('current-pop-trend').textContent = result.pop_trend !== undefined ? result.pop_trend.toFixed(4) : '--';
+
+      // Row 3: Activity
+      document.getElementById('current-activity-mean').textContent = result.activity_mean !== undefined ? result.activity_mean.toFixed(0) : '--';
+      document.getElementById('current-activity-std').textContent = result.activity_std !== undefined ? result.activity_std.toFixed(0) : '--';
+      document.getElementById('current-total-births').textContent = result.total_births !== undefined ? result.total_births.toLocaleString() : '--';
+      document.getElementById('current-total-deaths').textContent = result.total_deaths !== undefined ? result.total_deaths.toLocaleString() : '--';
+
+      // Row 4: Spatial
+      document.getElementById('current-clusters').textContent = result.cluster_count || 0;
+      document.getElementById('current-largest').textContent = `${((result.largest_cluster_ratio || 0) * 100).toFixed(1)}%`;
+      document.getElementById('current-edge').textContent = (result.edge_ratio || 0).toFixed(3);
+      document.getElementById('current-densvar').textContent = (result.density_variance || 0).toFixed(4);
+
+      // Row 5: Rule & Timing
+      document.getElementById('current-bs').textContent = `B${result.birth_count}/S${result.survival_count}`;
+      document.getElementById('current-settle').textContent = result.time_to_settle > 0 ? result.time_to_settle : 'never';
+      document.getElementById('current-gamma').textContent = (result.gamma || 0).toFixed(2);
+
+      drawPreview(result.rule_id);
+    }
+
+    function drawPreview(ruleId) {
+      const { birthMask, survivalMask } = ruleIdToMasks(ruleId);
+      const size = 52;
+      const cellSize = 3;
+      const seed = ruleId * 7919;
+      const rng = seededRandom(seed);
+
+      previewCtx.fillStyle = '#050505';
+      previewCtx.fillRect(0, 0, 160, 160);
+
+      // Simple CPU preview
+      let grid = new Uint8Array(size * size);
+      let next = new Uint8Array(size * size);
+
+      for (let i = 0; i < grid.length; i++) {
+        grid[i] = rng() < 0.3 ? 1 : 0;
+      }
+
+      for (let step = 0; step < 100; step++) {
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            let neighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const ny = (y + dy + size) % size;
+                const nx = (x + dx + size) % size;
+                if (grid[ny * size + nx] > 0) neighbors++;
+              }
+            }
+            const idx = y * size + x;
+            const alive = grid[idx] > 0;
+            if (alive) {
+              next[idx] = (survivalMask & (1 << neighbors)) ? 1 : 0;
+            } else {
+              next[idx] = (birthMask & (1 << neighbors)) ? 1 : 0;
+            }
+          }
+        }
+        [grid, next] = [next, grid];
+      }
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (grid[y * size + x] > 0) {
+            previewCtx.fillStyle = '#8a5a8a';
+            previewCtx.fillRect(x * cellSize + 2, y * cellSize + 2, cellSize - 1, cellSize - 1);
+          }
+        }
+      }
+    }
+
+    function addResultToTable(result) {
+      recentResults.unshift(result);
+      if (recentResults.length > 30) recentResults.pop();
+
+      const getBadgeClass = (classification) => ({
+        extinct: 'badge-extinct',
+        fixed: 'badge-fixed',
+        periodic: 'badge-periodic',
+        aperiodic: 'badge-aperiodic'
+      }[classification] || 'badge-aperiodic');
+
+      resultsBody.innerHTML = recentResults.map(r => `
+        <tr>
+          <td>${r.has_B0 ? '<span class="b0-indicator">⚡</span>' : ''}${r.rule_string}</td>
+          <td>${r.lambda > -10 ? r.lambda.toFixed(3) : '<span style="color:#555">--</span>'}</td>
+          <td>${(r.D || 0).toFixed(2)}</td>
+          <td>${r.period || '--'}</td>
+          <td>${r.pop_final > 0 ? r.pop_final.toLocaleString() : '<span style="color:#444">0</span>'}</td>
+          <td>${r.pop_std !== undefined ? r.pop_std.toFixed(0) : '--'}</td>
+          <td>${r.activity_mean !== undefined ? r.activity_mean.toFixed(0) : '--'}</td>
+          <td>${r.cluster_count || 0}</td>
+          <td><span class="badge ${getBadgeClass(r.classification)}">${r.classification.slice(0,4)}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // ============================================
+    // CSV EXPORT/IMPORT
+    // ============================================
+    function exportCSV() {
+      const headers = [
+        // Rule identity
+        'rule_id', 'rule_string', 'birth_count', 'survival_count', 'has_B0',
+        // Dynamics
+        'lambda', 'lambda_std', 'D', 'D_r_squared', 'gamma',
+        // Classification
+        'classification', 'period', 'period_confidence',
+        // Population stats
+        'pop_final', 'pop_peak', 'pop_min', 'pop_mean', 'pop_std', 'pop_trend',
+        'pop_t100', 'pop_t500', 'pop_t1000',
+        // Activity stats
+        'activity_mean', 'activity_std', 'total_births', 'total_deaths',
+        // Timing
+        'time_to_settle', 'extinction_time',
+        // Spatial
+        'cluster_count', 'largest_cluster_ratio', 'edge_ratio', 'density_variance',
+        'temporal_change'
+      ];
+      const rows = results.map(r => headers.map(h => {
+        const v = r[h];
+        if (v === undefined || v === null) return '';
+        if (typeof v === 'string') return `"${v}"`;
+        if (typeof v === 'number') return Number.isInteger(v) ? v : v.toFixed(6);
+        return v;
+      }).join(','));
+      return [headers.join(','), ...rows].join('\n');
+    }
+
+    function downloadCSV() {
+      const csv = exportCSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `survey-gpu-${completedSet.size}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      log(`Downloaded CSV with ${results.length} results`, 'success');
+    }
+
+    function autoSaveToFile() {
+      downloadCSV();
+      log(`Auto-saved at ${completedSet.size} rules`, 'info');
+    }
+
+    function importCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+
+      let imported = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].match(/(".*?"|[^,]+)/g) || [];
+        const row = {};
+
+        headers.forEach((h, j) => {
+          let v = (values[j] || '').replace(/^"|"$/g, '');
+          row[h] = isNaN(v) || v === '' ? v : parseFloat(v);
+        });
+
+        if (row.rule_id !== undefined && !completedSet.has(row.rule_id)) {
+          // Derive rule properties if not present
+          const { birthMask, survivalMask } = ruleIdToMasks(row.rule_id);
+
+          // Normalize the row - handle both old and new CSV formats
+          const result = {
+            rule_id: row.rule_id,
+            rule_string: row.rule_string || ruleIdToString(row.rule_id),
+            birth_count: row.birth_count ?? countBits(birthMask),
+            survival_count: row.survival_count ?? countBits(survivalMask),
+            has_B0: row.has_B0 ?? ((birthMask & 1) ? 1 : 0),
+            // Dynamics
+            lambda: row.lambda ?? 0,
+            lambda_std: row.lambda_std ?? 0,
+            D: row.D ?? 0,
+            D_r_squared: row.D_r_squared ?? 0,
+            gamma: row.gamma ?? 0,
+            // Classification
+            classification: row.classification || 'aperiodic',
+            period: row.period ?? 0,
+            period_confidence: row.period_confidence ?? 0,
+            // Population stats
+            pop_final: row.pop_final ?? 0,
+            pop_peak: row.pop_peak ?? row.pop_final ?? 0,
+            pop_min: row.pop_min ?? 0,
+            pop_mean: row.pop_mean ?? 0,
+            pop_std: row.pop_std ?? 0,
+            pop_trend: row.pop_trend ?? 0,
+            pop_t100: row.pop_t100 ?? 0,
+            pop_t500: row.pop_t500 ?? 0,
+            pop_t1000: row.pop_t1000 ?? 0,
+            // Activity stats
+            activity_mean: row.activity_mean ?? 0,
+            activity_std: row.activity_std ?? 0,
+            total_births: row.total_births ?? 0,
+            total_deaths: row.total_deaths ?? 0,
+            // Timing
+            time_to_settle: row.time_to_settle ?? -1,
+            extinction_time: row.extinction_time ?? -1,
+            // Spatial
+            cluster_count: row.cluster_count ?? 0,
+            largest_cluster_ratio: row.largest_cluster_ratio ?? 0,
+            edge_ratio: row.edge_ratio ?? 0,
+            density_variance: row.density_variance ?? 0,
+            temporal_change: row.temporal_change ?? 0
+          };
+
+          results.push(result);
+          completedSet.add(row.rule_id);
+          imported++;
+        }
+      }
+
+      log(`Imported ${imported} rules from CSV (${lines.length - 1} total in file)`, 'success');
+      updateProgress();
+    }
+
+    // ============================================
+    // EVENT HANDLERS
+    // ============================================
+    btnStart.addEventListener('click', runSurvey);
+
+    btnPause.addEventListener('click', () => {
+      isPaused = true;
+      btnPause.disabled = true;
+      btnResume.disabled = false;
+      log('Survey paused', 'warning');
+    });
+
+    btnResume.addEventListener('click', () => {
+      isPaused = false;
+      btnPause.disabled = false;
+      btnResume.disabled = true;
+      log('Survey resumed', 'info');
+    });
+
+    btnDownload.addEventListener('click', downloadCSV);
+
+    btnClear.addEventListener('click', () => {
+      if (confirm('Clear all survey data? This cannot be undone.')) {
+        results = [];
+        completedSet.clear();
+        recentResults = [];
+        rulesThisSession = 0;
+        resultsBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #444; padding: 2rem;">No results yet</td></tr>';
+        updateProgress();
+        log('Survey data cleared', 'warning');
+      }
+    });
+
+    document.getElementById('btn-import-csv').addEventListener('click', () => {
+      document.getElementById('csv-file-input').click();
+    });
+
+    document.getElementById('csv-file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        importCSV(ev.target.result);
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    document.getElementById('setting-grid').addEventListener('change', (e) => {
+      gridSize = parseInt(e.target.value);
+      log(`Grid size set to ${gridSize}x${gridSize}`, 'info');
+    });
+
+    document.getElementById('setting-steps').addEventListener('change', (e) => {
+      totalSteps = parseInt(e.target.value);
+      log(`Steps set to ${totalSteps}`, 'info');
+    });
+
+    document.getElementById('setting-batch').addEventListener('change', (e) => {
+      batchSize = parseInt(e.target.value);
+    });
+
+    document.getElementById('setting-autosave').addEventListener('change', (e) => {
+      autosaveInterval = parseInt(e.target.value);
+    });
+
+    // ============================================
+    // INIT
+    // ============================================
+    async function init() {
+      const success = await initWebGPU();
+      if (success) {
+        log('Ready to start GPU-accelerated survey', 'success');
+        btnStart.disabled = false;
+      } else {
+        btnStart.disabled = true;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

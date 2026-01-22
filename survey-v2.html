@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Survey v2 - Pass 1</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #a0a0a0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { color: #4a7a4a; font-size: 1.2rem; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+    .subtitle { color: #555; font-size: 0.8rem; margin-bottom: 2rem; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .row { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 400px; }
+    .col-narrow { flex: 0 0 320px; }
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .panel-title {
+      color: #666;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      padding: 0.6rem 1.2rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.15s ease;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button:hover { background: #222; color: #aaa; border-color: #444; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: #1a2a1a; border-color: #2a4a2a; color: #6a9a6a; }
+    button.primary:hover { background: #223a22; border-color: #3a5a3a; }
+    button.danger { background: #2a1a1a; border-color: #4a2a2a; color: #9a6a6a; }
+    button.secondary { background: #1a1a2a; border-color: #2a2a4a; color: #6a6a9a; }
+
+    .progress-container { margin: 1rem 0; }
+    .progress-bar {
+      height: 24px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2a4a2a, #3a6a3a);
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.75rem;
+      color: #888;
+      z-index: 1;
+    }
+    .progress-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .stat-item { background: #0d0d0d; padding: 0.75rem; border-radius: 3px; }
+    .stat-label { font-size: 0.6rem; color: #555; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.2rem; }
+    .stat-value { font-size: 1.1rem; color: #6a9a6a; font-variant-numeric: tabular-nums; }
+
+    .preview-container { display: flex; gap: 1rem; align-items: flex-start; }
+    #preview-canvas { border: 1px solid #222; border-radius: 2px; background: #050505; }
+    .preview-info { flex: 1; }
+    .rule-name { font-size: 1rem; color: #7a9a7a; margin-bottom: 0.5rem; }
+    .rule-metrics { font-size: 0.7rem; line-height: 1.6; }
+    .metric-row { display: flex; justify-content: space-between; }
+    .metric-label { color: #555; }
+    .metric-value { color: #888; font-variant-numeric: tabular-nums; }
+
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+    .results-table th {
+      text-align: left; padding: 0.4rem; border-bottom: 1px solid #333;
+      color: #555; font-weight: normal; text-transform: uppercase;
+      letter-spacing: 0.05em; font-size: 0.6rem;
+    }
+    .results-table td { padding: 0.4rem; border-bottom: 1px solid #1a1a1a; font-variant-numeric: tabular-nums; }
+    .results-table tr:hover { background: #151515; }
+    .results-scroll { max-height: 280px; overflow-y: auto; }
+
+    .badge {
+      display: inline-block; padding: 0.1rem 0.3rem; border-radius: 2px;
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-extinct { background: #1a1a1a; color: #555; }
+    .badge-fixed { background: #1a2a2a; color: #5a8a8a; }
+    .badge-periodic { background: #2a2a1a; color: #8a8a5a; }
+    .badge-aperiodic { background: #1a2a1a; color: #5a8a5a; }
+    .badge-migrated { background: #2a1a2a; color: #8a5a8a; }
+
+    .log {
+      background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 3px;
+      padding: 0.75rem; max-height: 150px; overflow-y: auto; font-size: 0.7rem;
+    }
+    .log-entry { margin: 0.15rem 0; color: #555; }
+    .log-entry.success { color: #5a8a5a; }
+    .log-entry.error { color: #8a5a5a; }
+    .log-entry.warning { color: #8a7a5a; }
+    .log-entry.info { color: #5a7a8a; }
+
+    .settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .setting { display: flex; flex-direction: column; gap: 0.2rem; }
+    .setting label { font-size: 0.65rem; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+    .setting input, .setting select {
+      background: #0d0d0d; border: 1px solid #222; color: #888;
+      padding: 0.4rem; font-family: inherit; font-size: 0.75rem; border-radius: 2px;
+    }
+    .setting input:focus, .setting select:focus { outline: none; border-color: #3a5a3a; }
+
+    .migration-info {
+      background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 3px;
+      padding: 0.75rem; margin-bottom: 1rem; font-size: 0.75rem; color: #8a8aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RULE SURVEY v2 - PASS 1</h1>
+    <p class="subtitle">Enhanced metrics: λ (3 trials), spatial structure, population trajectory, cluster analysis</p>
+
+    <div class="row">
+      <div class="col">
+        <div class="panel">
+          <div class="panel-title">Progress</div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+              <div class="progress-text" id="progress-text">0 / 262,144</div>
+            </div>
+            <div class="progress-stats">
+              <span id="elapsed-time">Elapsed: 0:00:00</span>
+              <span id="rate">0 rules/sec</span>
+              <span id="eta">ETA: --:--:--</span>
+            </div>
+          </div>
+          <div id="migration-info" class="migration-info" style="display: none;">
+            <strong>v1 Migration:</strong> <span id="migration-status">Checking...</span>
+          </div>
+          <div style="margin-top: 1rem;">
+            <button id="btn-start" class="primary">Start Survey</button>
+            <button id="btn-pause" disabled>Pause</button>
+            <button id="btn-resume" disabled>Resume</button>
+            <button id="btn-download" disabled>Download CSV</button>
+            <button id="btn-migrate" class="secondary" style="display: none;">Import v1 Data</button>
+            <button id="btn-import-csv" class="secondary">Import from CSV</button>
+            <button id="btn-clear" class="danger">Clear Data</button>
+          </div>
+          <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Current Rule</div>
+          <div class="preview-container">
+            <canvas id="preview-canvas" width="150" height="150"></canvas>
+            <div class="preview-info">
+              <div class="rule-name" id="current-rule">--</div>
+              <div class="rule-metrics">
+                <div class="metric-row"><span class="metric-label">Rule ID:</span><span class="metric-value" id="current-id">--</span></div>
+                <div class="metric-row"><span class="metric-label">λ (mean±std):</span><span class="metric-value" id="current-lambda">--</span></div>
+                <div class="metric-row"><span class="metric-label">D:</span><span class="metric-value" id="current-d">--</span></div>
+                <div class="metric-row"><span class="metric-label">γ (warmed):</span><span class="metric-value" id="current-gamma">--</span></div>
+                <div class="metric-row"><span class="metric-label">Class:</span><span class="metric-value" id="current-class">--</span></div>
+                <div class="metric-row"><span class="metric-label">Pop (t100/peak/final):</span><span class="metric-value" id="current-pop">--</span></div>
+                <div class="metric-row"><span class="metric-label">Clusters:</span><span class="metric-value" id="current-clusters">--</span></div>
+                <div class="metric-row"><span class="metric-label">Density Var:</span><span class="metric-value" id="current-densvar">--</span></div>
+                <div class="metric-row"><span class="metric-label">Edge Ratio:</span><span class="metric-value" id="current-edge">--</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Recent Results</div>
+          <div class="results-scroll">
+            <table class="results-table">
+              <thead><tr>
+                <th>Rule</th><th>λ</th><th>D</th><th>γ</th><th>Clust</th><th>Edge</th><th>Class</th>
+              </tr></thead>
+              <tbody id="results-body"><tr><td colspan="7" style="text-align: center; color: #444;">No results yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-narrow">
+        <div class="panel">
+          <div class="panel-title">Statistics</div>
+          <div class="stat-grid">
+            <div class="stat-item"><div class="stat-label">Completed</div><div class="stat-value" id="stat-completed">0</div></div>
+            <div class="stat-item"><div class="stat-label">Remaining</div><div class="stat-value" id="stat-remaining">262,144</div></div>
+            <div class="stat-item"><div class="stat-label">Avg λ</div><div class="stat-value" id="stat-lambda">--</div></div>
+            <div class="stat-item"><div class="stat-label">Avg D</div><div class="stat-value" id="stat-d">--</div></div>
+          </div>
+          <div style="margin-top: 1rem;">
+            <div class="panel-title">Classifications</div>
+            <div class="rule-metrics">
+              <div class="metric-row"><span class="metric-label">Extinct:</span><span class="metric-value" id="class-extinct">0</span></div>
+              <div class="metric-row"><span class="metric-label">Fixed:</span><span class="metric-value" id="class-fixed">0</span></div>
+              <div class="metric-row"><span class="metric-label">Periodic:</span><span class="metric-value" id="class-periodic">0</span></div>
+              <div class="metric-row"><span class="metric-label">Aperiodic:</span><span class="metric-value" id="class-aperiodic">0</span></div>
+              <div class="metric-row"><span class="metric-label" style="color:#8a5a8a">Migrated (v1):</span><span class="metric-value" id="class-migrated">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Settings</div>
+          <div class="settings-grid">
+            <div class="setting">
+              <label>Grid Size</label>
+              <select id="setting-grid">
+                <option value="64">64×64 (fast)</option>
+                <option value="128" selected>128×128 (balanced)</option>
+                <option value="256">256×256 (thorough)</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Steps</label>
+              <select id="setting-steps">
+                <option value="300">300 (fast)</option>
+                <option value="500" selected>500 (balanced)</option>
+                <option value="1000">1000 (thorough)</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Lambda Trials</label>
+              <select id="setting-lambda-trials">
+                <option value="1">1 (fast)</option>
+                <option value="3" selected>3 (balanced)</option>
+                <option value="5">5 (thorough)</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Warmup Steps</label>
+              <select id="setting-warmup">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label>Auto-save every</label>
+              <select id="setting-autosave">
+                <option value="500">500 rules</option>
+                <option value="1000" selected>1000 rules</option>
+                <option value="2000">2000 rules</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Log</div>
+          <div class="log" id="log"><div class="log-entry">Survey v2 ready. Enhanced metrics enabled.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // EMBEDDED CA ENGINE
+    // ============================================
+
+    function seededRandom(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    class Grid {
+      constructor(rows, cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.cells = new Uint8Array(rows * cols);
+      }
+      idx(r, c) { return r * this.cols + c; }
+      get(r, c) {
+        r = ((r % this.rows) + this.rows) % this.rows;
+        c = ((c % this.cols) + this.cols) % this.cols;
+        return this.cells[this.idx(r, c)];
+      }
+      set(r, c, v) { this.cells[this.idx(r, c)] = v; }
+      countNeighbors(r, c) {
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            if (this.get(r + dr, c + dc) > 0) count++;
+          }
+        }
+        return count;
+      }
+      randomize(density, seed) {
+        const rng = seededRandom(seed);
+        for (let i = 0; i < this.cells.length; i++) {
+          this.cells[i] = rng() < density ? 1 : 0;
+        }
+      }
+      clone() {
+        const copy = new Grid(this.rows, this.cols);
+        copy.cells.set(this.cells);
+        return copy;
+      }
+      population() {
+        let count = 0;
+        for (let i = 0; i < this.cells.length; i++) if (this.cells[i] > 0) count++;
+        return count;
+      }
+      isEmpty() { return this.population() === 0; }
+      hammingDistance(other) {
+        let diff = 0;
+        for (let i = 0; i < this.cells.length; i++) {
+          if ((this.cells[i] > 0) !== (other.cells[i] > 0)) diff++;
+        }
+        return diff;
+      }
+      flipCell(r, c) {
+        const i = this.idx(r, c);
+        this.cells[i] = this.cells[i] > 0 ? 0 : 1;
+      }
+      hash() {
+        let hash = 2166136261;
+        for (let i = 0; i < this.cells.length; i++) {
+          hash ^= this.cells[i] > 0 ? 1 : 0;
+          hash = Math.imul(hash, 16777619) >>> 0;
+        }
+        return hash;
+      }
+    }
+
+    class Rule {
+      constructor(birthMask, survivalMask) {
+        this.birthMask = birthMask;
+        this.survivalMask = survivalMask;
+      }
+      shouldBirth(n) { return (this.birthMask & (1 << n)) !== 0; }
+      shouldSurvive(n) { return (this.survivalMask & (1 << n)) !== 0; }
+      toString() {
+        let b = '', s = '';
+        for (let i = 0; i <= 8; i++) {
+          if (this.birthMask & (1 << i)) b += i;
+          if (this.survivalMask & (1 << i)) s += i;
+        }
+        return `B${b}/S${s}`;
+      }
+      static fromId(id) {
+        return new Rule(Math.floor(id / 512), id % 512);
+      }
+    }
+
+    function stepInPlace(current, next, rule) {
+      for (let r = 0; r < current.rows; r++) {
+        for (let c = 0; c < current.cols; c++) {
+          const state = current.get(r, c);
+          const neighbors = current.countNeighbors(r, c);
+          if (state > 0) {
+            next.set(r, c, rule.shouldSurvive(neighbors) ? 1 : 0);
+          } else {
+            next.set(r, c, rule.shouldBirth(neighbors) ? 1 : 0);
+          }
+        }
+      }
+    }
+
+    // ============================================
+    // NEW MEASUREMENT FUNCTIONS
+    // ============================================
+
+    // Convert grid to compact 32x32 thumbnail (stored as base64 string)
+    function gridToThumbnail(grid, thumbSize = 32) {
+      const scaleR = grid.rows / thumbSize;
+      const scaleC = grid.cols / thumbSize;
+      const bits = [];
+
+      for (let r = 0; r < thumbSize; r++) {
+        for (let c = 0; c < thumbSize; c++) {
+          // Sample from the grid (majority vote in each cell region)
+          let sum = 0;
+          const r0 = Math.floor(r * scaleR);
+          const r1 = Math.floor((r + 1) * scaleR);
+          const c0 = Math.floor(c * scaleC);
+          const c1 = Math.floor((c + 1) * scaleC);
+          for (let rr = r0; rr < r1; rr++) {
+            for (let cc = c0; cc < c1; cc++) {
+              if (grid.cells[grid.idx(rr, cc)] > 0) sum++;
+            }
+          }
+          bits.push(sum > (r1 - r0) * (c1 - c0) / 2 ? 1 : 0);
+        }
+      }
+
+      // Pack bits into base64 (32x32 = 1024 bits = 128 bytes)
+      const bytes = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        let byte = 0;
+        for (let j = 0; j < 8; j++) {
+          if (bits[i + j]) byte |= (1 << j);
+        }
+        bytes.push(byte);
+      }
+
+      // Convert to base64
+      return btoa(String.fromCharCode(...bytes));
+    }
+
+    // Decode thumbnail back to array for display
+    function thumbnailToArray(base64, size = 32) {
+      const binary = atob(base64);
+      const bits = [];
+      for (let i = 0; i < binary.length; i++) {
+        const byte = binary.charCodeAt(i);
+        for (let j = 0; j < 8; j++) {
+          bits.push((byte >> j) & 1);
+        }
+      }
+      return bits;
+    }
+
+    // Box-counting dimension
+    function measureDimension(grid) {
+      const scales = [1, 2, 4, 8, 16, 32, 64];
+      const data = [];
+      for (const scale of scales) {
+        if (scale > grid.rows / 2) continue;
+        let count = 0;
+        const boxRows = Math.ceil(grid.rows / scale);
+        const boxCols = Math.ceil(grid.cols / scale);
+        for (let br = 0; br < boxRows; br++) {
+          for (let bc = 0; bc < boxCols; bc++) {
+            let hasLife = false;
+            outer: for (let r = br * scale; r < Math.min((br + 1) * scale, grid.rows); r++) {
+              for (let c = bc * scale; c < Math.min((bc + 1) * scale, grid.cols); c++) {
+                if (grid.cells[grid.idx(r, c)] > 0) { hasLife = true; break outer; }
+              }
+            }
+            if (hasLife) count++;
+          }
+        }
+        if (count > 0) data.push({ logScale: Math.log(scale), logCount: Math.log(count) });
+      }
+      if (data.length < 2) return 0;
+      const n = data.length;
+      const sumX = data.reduce((s, d) => s + d.logScale, 0);
+      const sumY = data.reduce((s, d) => s + d.logCount, 0);
+      const sumXY = data.reduce((s, d) => s + d.logScale * d.logCount, 0);
+      const sumX2 = data.reduce((s, d) => s + d.logScale * d.logScale, 0);
+      return -(n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    }
+
+    // BDM approximation
+    function computeBDM(grid) {
+      const blockSize = 4;
+      const blockCounts = new Map();
+      const blockRows = Math.ceil(grid.rows / blockSize);
+      const blockCols = Math.ceil(grid.cols / blockSize);
+      for (let br = 0; br < blockRows; br++) {
+        for (let bc = 0; bc < blockCols; bc++) {
+          let value = 0;
+          for (let r = 0; r < blockSize; r++) {
+            for (let c = 0; c < blockSize; c++) {
+              const row = br * blockSize + r;
+              const col = bc * blockSize + c;
+              if (row < grid.rows && col < grid.cols && grid.cells[grid.idx(row, col)] > 0) {
+                value |= (1 << (r * blockSize + c));
+              }
+            }
+          }
+          blockCounts.set(value, (blockCounts.get(value) || 0) + 1);
+        }
+      }
+      let bdm = 0;
+      for (const [block, count] of blockCounts) {
+        const bits = block.toString(2).split('1').length - 1;
+        const complexity = bits === 0 || bits === 16 ? 1 : Math.min(8, 2 + bits * 0.5);
+        bdm += complexity + Math.log2(count);
+      }
+      return bdm;
+    }
+
+    // Cluster detection using flood fill
+    function measureClusters(grid) {
+      const visited = new Uint8Array(grid.cells.length);
+      const clusters = [];
+
+      function floodFill(startR, startC) {
+        const stack = [[startR, startC]];
+        let size = 0;
+        while (stack.length > 0) {
+          const [r, c] = stack.pop();
+          const idx = grid.idx(r, c);
+          if (visited[idx]) continue;
+          if (grid.cells[idx] === 0) continue;
+          visited[idx] = 1;
+          size++;
+          // Check 4-connected neighbors (not 8, for cleaner clusters)
+          for (const [dr, dc] of [[0,1], [0,-1], [1,0], [-1,0]]) {
+            const nr = (r + dr + grid.rows) % grid.rows;
+            const nc = (c + dc + grid.cols) % grid.cols;
+            if (!visited[grid.idx(nr, nc)] && grid.cells[grid.idx(nr, nc)] > 0) {
+              stack.push([nr, nc]);
+            }
+          }
+        }
+        return size;
+      }
+
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          if (grid.cells[grid.idx(r, c)] > 0 && !visited[grid.idx(r, c)]) {
+            const size = floodFill(r, c);
+            if (size > 0) clusters.push(size);
+          }
+        }
+      }
+
+      const totalPop = clusters.reduce((a, b) => a + b, 0);
+      const largestCluster = clusters.length > 0 ? Math.max(...clusters) : 0;
+
+      return {
+        count: clusters.length,
+        largestRatio: totalPop > 0 ? largestCluster / totalPop : 0
+      };
+    }
+
+    // Density variance across 16x16 regions
+    function measureDensityVariance(grid) {
+      const regionSize = 16;
+      const regionRows = Math.floor(grid.rows / regionSize);
+      const regionCols = Math.floor(grid.cols / regionSize);
+      if (regionRows < 2 || regionCols < 2) return 0;
+
+      const densities = [];
+      for (let rr = 0; rr < regionRows; rr++) {
+        for (let rc = 0; rc < regionCols; rc++) {
+          let count = 0;
+          for (let r = rr * regionSize; r < (rr + 1) * regionSize; r++) {
+            for (let c = rc * regionSize; c < (rc + 1) * regionSize; c++) {
+              if (grid.cells[grid.idx(r, c)] > 0) count++;
+            }
+          }
+          densities.push(count / (regionSize * regionSize));
+        }
+      }
+
+      const mean = densities.reduce((a, b) => a + b, 0) / densities.length;
+      const variance = densities.reduce((sum, d) => sum + (d - mean) ** 2, 0) / densities.length;
+      return variance;
+    }
+
+    // Edge ratio: cells adjacent to empty / total alive
+    function measureEdgeRatio(grid) {
+      let edgeCells = 0;
+      let totalAlive = 0;
+
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          if (grid.cells[grid.idx(r, c)] > 0) {
+            totalAlive++;
+            // Check if any neighbor is dead
+            let hasDeadNeighbor = false;
+            for (let dr = -1; dr <= 1 && !hasDeadNeighbor; dr++) {
+              for (let dc = -1; dc <= 1 && !hasDeadNeighbor; dc++) {
+                if (dr === 0 && dc === 0) continue;
+                if (grid.get(r + dr, c + dc) === 0) hasDeadNeighbor = true;
+              }
+            }
+            if (hasDeadNeighbor) edgeCells++;
+          }
+        }
+      }
+
+      return totalAlive > 0 ? edgeCells / totalAlive : 0;
+    }
+
+    // Lambda with multiple trials
+    function measureLambda(rule, gridSize, steps, numTrials, baseSeed) {
+      const lambdas = [];
+
+      for (let trial = 0; trial < numTrials; trial++) {
+        const seed = baseSeed + trial * 1000000;
+        const rng = seededRandom(seed);
+
+        const grid1 = new Grid(gridSize, gridSize);
+        const grid2 = new Grid(gridSize, gridSize);
+
+        for (let i = 0; i < grid1.cells.length; i++) {
+          const v = rng() < 0.3 ? 1 : 0;
+          grid1.cells[i] = v;
+          grid2.cells[i] = v;
+        }
+
+        // Flip one random cell
+        const flipR = Math.floor(rng() * gridSize);
+        const flipC = Math.floor(rng() * gridSize);
+        grid2.flipCell(flipR, flipC);
+
+        let c1 = grid1, c2 = grid2;
+        let n1 = new Grid(gridSize, gridSize);
+        let n2 = new Grid(gridSize, gridSize);
+
+        for (let t = 0; t < steps; t++) {
+          stepInPlace(c1, n1, rule);
+          stepInPlace(c2, n2, rule);
+          [c1, n1] = [n1, c1];
+          [c2, n2] = [n2, c2];
+        }
+
+        const hFinal = c1.hammingDistance(c2);
+        const lambda = hFinal === 0 ? -10 : Math.log(hFinal) / steps;
+        lambdas.push(lambda);
+      }
+
+      // Filter out -10 (healed) values for stats, but track count
+      const validLambdas = lambdas.filter(l => l > -10);
+      const healedCount = lambdas.length - validLambdas.length;
+
+      if (validLambdas.length === 0) {
+        return { mean: -10, std: 0, healed: healedCount };
+      }
+
+      const mean = validLambdas.reduce((a, b) => a + b, 0) / validLambdas.length;
+      const variance = validLambdas.reduce((sum, l) => sum + (l - mean) ** 2, 0) / validLambdas.length;
+      const std = Math.sqrt(variance);
+
+      return { mean, std, healed: healedCount };
+    }
+
+    // ============================================
+    // MAIN MEASUREMENT FUNCTION
+    // ============================================
+
+    function measureRuleV2(ruleId, gridSize, steps, lambdaTrials, warmupSteps) {
+      const rule = Rule.fromId(ruleId);
+      const seed = ruleId * 7919;
+
+      // Initialize grid
+      const grid = new Grid(gridSize, gridSize);
+      grid.randomize(0.3, seed);
+
+      // Run simulation with tracking
+      let current = grid.clone();
+      let next = new Grid(gridSize, gridSize);
+      const hashes = new Map();
+      let classification = 'aperiodic';
+      let period = null;
+      let timeToSettle = steps;
+
+      let popPeak = current.population();
+      let popT100 = 0;
+      let bdmAfterWarmup = null;
+
+      for (let t = 0; t < steps; t++) {
+        const pop = current.population();
+        if (pop > popPeak) popPeak = pop;
+        if (t === 100) popT100 = pop;
+        if (t === warmupSteps) bdmAfterWarmup = computeBDM(current);
+
+        if (current.isEmpty()) {
+          classification = 'extinct';
+          timeToSettle = t;
+          break;
+        }
+
+        const hash = current.hash();
+        if (hashes.has(hash)) {
+          period = t - hashes.get(hash);
+          classification = period === 1 ? 'fixed' : 'periodic';
+          timeToSettle = t;
+          break;
+        }
+        if (hashes.size < 500) hashes.set(hash, t);
+
+        stepInPlace(current, next, rule);
+        [current, next] = [next, current];
+      }
+
+      // Final measurements
+      const popFinal = current.population();
+      if (popT100 === 0 && timeToSettle >= 100) popT100 = popFinal; // Didn't reach 100
+
+      const D = measureDimension(current);
+      const bdmFinal = computeBDM(current);
+
+      // Gamma: from warmup point to final (not from random start)
+      let gamma = 0;
+      if (bdmAfterWarmup !== null && timeToSettle > warmupSteps + 10) {
+        gamma = ((bdmFinal - bdmAfterWarmup) / (timeToSettle - warmupSteps)) * 1000;
+      }
+
+      // Cluster analysis
+      const clusters = measureClusters(current);
+
+      // Density variance
+      const densityVariance = measureDensityVariance(current);
+
+      // Edge ratio
+      const edgeRatio = measureEdgeRatio(current);
+
+      // Lambda (multiple trials)
+      const lambdaSteps = Math.min(steps, 200);
+      const lambdaResult = measureLambda(rule, gridSize, lambdaSteps, lambdaTrials, seed + 500000);
+
+      // Generate 32x32 thumbnail of final state
+      const thumbnail = gridToThumbnail(current, 32);
+
+      return {
+        rule_id: ruleId,
+        rule_string: rule.toString(),
+        lambda: lambdaResult.mean,
+        lambda_std: lambdaResult.std,
+        D,
+        gamma,
+        classification,
+        period,
+        pop_final: popFinal,
+        pop_peak: popPeak,
+        pop_t100: popT100,
+        time_to_settle: timeToSettle,
+        cluster_count: clusters.count,
+        largest_cluster_ratio: clusters.largestRatio,
+        density_variance: densityVariance,
+        edge_ratio: edgeRatio,
+        migrated: false,
+        thumbnail: thumbnail
+      };
+    }
+
+    // ============================================
+    // SURVEY UI
+    // ============================================
+
+    const TOTAL_RULES = 262144;
+    const STORAGE_KEY_V2 = 'cells_survey_v3'; // New key for v2 format
+    const STORAGE_KEY_V1 = 'cells_survey_v2'; // Old v1 data
+    const UI_UPDATE_INTERVAL = 150;
+
+    let results = [];
+    let completedSet = new Set();
+    let isRunning = false;
+    let isPaused = false;
+    let startTime = null;
+    let sessionStartTime = null;
+    let currentRuleIndex = 0;
+    let recentResults = [];
+    let migratedCount = 0;
+
+    // DOM elements
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const elapsedTime = document.getElementById('elapsed-time');
+    const rateEl = document.getElementById('rate');
+    const etaEl = document.getElementById('eta');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnResume = document.getElementById('btn-resume');
+    const btnDownload = document.getElementById('btn-download');
+    const btnMigrate = document.getElementById('btn-migrate');
+    const btnClear = document.getElementById('btn-clear');
+    const resultsBody = document.getElementById('results-body');
+    const logEl = document.getElementById('log');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    const migrationInfo = document.getElementById('migration-info');
+
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      if (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+    }
+
+    function formatTime(ms) {
+      const s = Math.floor(ms / 1000);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+      const completed = completedSet.size;
+      const percent = (completed / TOTAL_RULES) * 100;
+      const elapsed = sessionStartTime ? Date.now() - sessionStartTime : 0;
+      const rulesThisSession = results.filter(r => !r.migrated).length;
+      const rate = elapsed > 0 ? rulesThisSession / (elapsed / 1000) : 0;
+      const remaining = TOTAL_RULES - completed;
+      const eta = rate > 0 ? remaining / rate * 1000 : 0;
+
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = `${completed.toLocaleString()} / ${TOTAL_RULES.toLocaleString()}`;
+      elapsedTime.textContent = `Elapsed: ${formatTime(elapsed)}`;
+      rateEl.textContent = `${rate.toFixed(1)} rules/sec`;
+      etaEl.textContent = `ETA: ${rate > 0 ? formatTime(eta) : '--:--:--'}`;
+
+      document.getElementById('stat-completed').textContent = completed.toLocaleString();
+      document.getElementById('stat-remaining').textContent = remaining.toLocaleString();
+
+      // Classification counts
+      const counts = { extinct: 0, fixed: 0, periodic: 0, aperiodic: 0 };
+      let migrated = 0;
+      for (const r of results) {
+        counts[r.classification]++;
+        if (r.migrated) migrated++;
+      }
+      document.getElementById('class-extinct').textContent = counts.extinct.toLocaleString();
+      document.getElementById('class-fixed').textContent = counts.fixed.toLocaleString();
+      document.getElementById('class-periodic').textContent = counts.periodic.toLocaleString();
+      document.getElementById('class-aperiodic').textContent = counts.aperiodic.toLocaleString();
+      document.getElementById('class-migrated').textContent = migrated.toLocaleString();
+
+      // Averages
+      const validLambdas = results.filter(r => r.lambda > -10).map(r => r.lambda);
+      const avgLambda = validLambdas.length > 0 ? validLambdas.reduce((a, b) => a + b, 0) / validLambdas.length : 0;
+      const avgD = results.length > 0 ? results.reduce((a, r) => a + r.D, 0) / results.length : 0;
+      document.getElementById('stat-lambda').textContent = avgLambda.toFixed(3);
+      document.getElementById('stat-d').textContent = avgD.toFixed(3);
+    }
+
+    function updateCurrentRule(result) {
+      document.getElementById('current-rule').textContent = result.rule_string;
+      document.getElementById('current-id').textContent = result.rule_id;
+      document.getElementById('current-lambda').textContent =
+        result.lambda > -10 ? `${result.lambda.toFixed(4)} ± ${result.lambda_std.toFixed(4)}` : 'healed';
+      document.getElementById('current-d').textContent = result.D.toFixed(4);
+      document.getElementById('current-gamma').textContent = result.gamma.toFixed(2);
+      document.getElementById('current-class').textContent = result.classification + (result.migrated ? ' (v1)' : '');
+      document.getElementById('current-pop').textContent = `${result.pop_t100} / ${result.pop_peak} / ${result.pop_final}`;
+      document.getElementById('current-clusters').textContent = `${result.cluster_count} (${(result.largest_cluster_ratio * 100).toFixed(1)}% largest)`;
+      document.getElementById('current-densvar').textContent = result.density_variance.toFixed(6);
+      document.getElementById('current-edge').textContent = result.edge_ratio.toFixed(4);
+
+      drawPreview(result.rule_id);
+    }
+
+    function drawPreview(ruleId) {
+      const rule = Rule.fromId(ruleId);
+      const size = 50;
+      const cellSize = 3;
+
+      previewCtx.fillStyle = '#050505';
+      previewCtx.fillRect(0, 0, 150, 150);
+
+      const grid = new Grid(size, size);
+      grid.randomize(0.3, ruleId * 7919);
+      let current = grid, next = new Grid(size, size);
+
+      for (let i = 0; i < 100; i++) {
+        stepInPlace(current, next, rule);
+        [current, next] = [next, current];
+      }
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (current.cells[current.idx(r, c)] > 0) {
+            previewCtx.fillStyle = '#4a7a4a';
+            previewCtx.fillRect(c * cellSize, r * cellSize, cellSize - 1, cellSize - 1);
+          }
+        }
+      }
+    }
+
+    function addResultToTable(result) {
+      recentResults.unshift(result);
+      if (recentResults.length > 15) recentResults.pop();
+
+      resultsBody.innerHTML = recentResults.map(r => `
+        <tr>
+          <td>${r.rule_string}${r.migrated ? ' <span class="badge badge-migrated">v1</span>' : ''}</td>
+          <td>${r.lambda > -10 ? r.lambda.toFixed(3) : 'heal'}</td>
+          <td>${r.D.toFixed(2)}</td>
+          <td>${r.gamma.toFixed(0)}</td>
+          <td>${r.cluster_count}</td>
+          <td>${r.edge_ratio.toFixed(2)}</td>
+          <td><span class="badge badge-${r.classification}">${r.classification.slice(0,4)}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function saveCheckpoint() {
+      try {
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify({
+          results,
+          completed: Array.from(completedSet),
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        log('Checkpoint save failed: ' + e.message, 'error');
+      }
+    }
+
+    function loadCheckpoint() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_V2));
+        if (data) {
+          results = data.results || [];
+          completedSet = new Set(data.completed || []);
+          migratedCount = results.filter(r => r.migrated).length;
+          log(`Loaded v2 checkpoint: ${completedSet.size} rules (${migratedCount} migrated)`, 'success');
+          return true;
+        }
+      } catch (e) {
+        log('Failed to load checkpoint: ' + e.message, 'error');
+      }
+      return false;
+    }
+
+    function checkV1Data() {
+      try {
+        const v1Data = JSON.parse(localStorage.getItem(STORAGE_KEY_V1));
+        if (v1Data && v1Data.results && v1Data.results.length > 0) {
+          const v1Count = v1Data.results.length;
+          migrationInfo.style.display = 'block';
+          document.getElementById('migration-status').textContent =
+            `${v1Count.toLocaleString()} rules available from v1 survey`;
+          btnMigrate.style.display = 'inline-block';
+          return v1Data;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function migrateV1Data() {
+      const v1Data = checkV1Data();
+      if (!v1Data) {
+        log('No v1 data found', 'warning');
+        return;
+      }
+
+      let migrated = 0;
+      let skipped = 0;
+
+      for (const v1Rule of v1Data.results) {
+        if (completedSet.has(v1Rule.rule_id)) {
+          skipped++;
+          continue;
+        }
+
+        // Only migrate extinct/fixed rules fully (they won't change)
+        // Periodic/aperiodic rules need re-measurement for new metrics
+        if (v1Rule.classification === 'extinct' || v1Rule.classification === 'fixed') {
+          const migratedResult = {
+            rule_id: v1Rule.rule_id,
+            rule_string: v1Rule.rule_string,
+            lambda: v1Rule.lambda,
+            lambda_std: 0, // Unknown
+            D: v1Rule.D,
+            gamma: v1Rule.gamma,
+            classification: v1Rule.classification,
+            period: v1Rule.period,
+            pop_final: v1Rule.population,
+            pop_peak: v1Rule.population, // Assume same for extinct/fixed
+            pop_t100: v1Rule.classification === 'extinct' ? 0 : v1Rule.population,
+            time_to_settle: v1Rule.classification === 'extinct' ? 0 : 1,
+            cluster_count: 0, // Unknown
+            largest_cluster_ratio: 0,
+            density_variance: 0,
+            edge_ratio: 0,
+            migrated: true
+          };
+          results.push(migratedResult);
+          completedSet.add(v1Rule.rule_id);
+          migrated++;
+        }
+      }
+
+      log(`Migrated ${migrated} extinct/fixed rules from v1 (skipped ${skipped} duplicates)`, 'success');
+      saveCheckpoint();
+      updateProgress();
+      btnMigrate.style.display = 'none';
+      migrationInfo.innerHTML = `<strong>Migration complete:</strong> ${migrated} rules imported`;
+    }
+
+    function autoSaveToFile() {
+      const csv = exportCSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+      a.download = `survey-v2-checkpoint-${completedSet.size}-${timestamp}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      log(`Auto-saved checkpoint: ${completedSet.size} rules`, 'success');
+    }
+
+    function exportCSV() {
+      const headers = [
+        'rule_id', 'rule_string', 'lambda', 'lambda_std', 'D', 'gamma',
+        'classification', 'period', 'pop_final', 'pop_peak', 'pop_t100',
+        'time_to_settle', 'cluster_count', 'largest_cluster_ratio',
+        'density_variance', 'edge_ratio', 'migrated', 'thumbnail'
+      ];
+      const rows = [headers.join(',')];
+      for (const r of results) {
+        rows.push([
+          r.rule_id, `"${r.rule_string}"`, r.lambda.toFixed(6), r.lambda_std.toFixed(6),
+          r.D.toFixed(4), r.gamma.toFixed(4), r.classification, r.period ?? '',
+          r.pop_final, r.pop_peak, r.pop_t100, r.time_to_settle,
+          r.cluster_count, r.largest_cluster_ratio.toFixed(4),
+          r.density_variance.toFixed(6), r.edge_ratio.toFixed(4), r.migrated,
+          r.thumbnail || ''
+        ].join(','));
+      }
+      return rows.join('\n');
+    }
+
+    async function runSurvey() {
+      const gridSize = parseInt(document.getElementById('setting-grid').value);
+      const steps = parseInt(document.getElementById('setting-steps').value);
+      const lambdaTrials = parseInt(document.getElementById('setting-lambda-trials').value);
+      const warmupSteps = parseInt(document.getElementById('setting-warmup').value);
+
+      log(`Survey v2: ${gridSize}×${gridSize}, ${steps} steps, ${lambdaTrials} λ trials, ${warmupSteps} warmup`, 'info');
+
+      while (currentRuleIndex < TOTAL_RULES && completedSet.has(currentRuleIndex)) {
+        currentRuleIndex++;
+      }
+
+      let lastUIUpdate = Date.now();
+      let batchCount = 0;
+
+      while (isRunning && !isPaused && currentRuleIndex < TOTAL_RULES) {
+        const ruleId = currentRuleIndex;
+
+        const result = measureRuleV2(ruleId, gridSize, steps, lambdaTrials, warmupSteps);
+        results.push(result);
+        completedSet.add(ruleId);
+        currentRuleIndex++;
+        batchCount++;
+
+        if (Date.now() - lastUIUpdate > UI_UPDATE_INTERVAL) {
+          updateCurrentRule(result);
+          addResultToTable(result);
+          updateProgress();
+          lastUIUpdate = Date.now();
+          await new Promise(r => setTimeout(r, 0));
+        }
+
+        if (batchCount % 50 === 0) {
+          saveCheckpoint();
+        }
+
+        // Auto-save to filesystem periodically
+        const autosaveInterval = parseInt(document.getElementById('setting-autosave').value);
+        const rulesThisSession = results.filter(r => !r.migrated).length;
+        if (rulesThisSession > 0 && rulesThisSession % autosaveInterval === 0) {
+          autoSaveToFile();
+        }
+
+        while (currentRuleIndex < TOTAL_RULES && completedSet.has(currentRuleIndex)) {
+          currentRuleIndex++;
+        }
+      }
+
+      if (completedSet.size >= TOTAL_RULES) {
+        log(`Survey complete! ${results.length} rules measured`, 'success');
+        isRunning = false;
+        saveCheckpoint();
+      }
+
+      updateProgress();
+      setButtonStates();
+    }
+
+    function setButtonStates() {
+      btnStart.disabled = isRunning;
+      btnPause.disabled = !isRunning || isPaused;
+      btnResume.disabled = !isPaused;
+      btnDownload.disabled = results.length === 0;
+      document.querySelectorAll('.setting select').forEach(el => el.disabled = isRunning);
+    }
+
+    // Event handlers
+    btnStart.addEventListener('click', async () => {
+      loadCheckpoint();
+      isRunning = true;
+      isPaused = false;
+      sessionStartTime = Date.now();
+      setButtonStates();
+      await runSurvey();
+    });
+
+    btnPause.addEventListener('click', () => {
+      isPaused = true;
+      log('Survey paused', 'warning');
+      saveCheckpoint();
+      setButtonStates();
+    });
+
+    btnResume.addEventListener('click', async () => {
+      isPaused = false;
+      isRunning = true;
+      log('Survey resumed', 'info');
+      setButtonStates();
+      await runSurvey();
+    });
+
+    btnDownload.addEventListener('click', () => {
+      const csv = exportCSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lifelike-survey-v2-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      log(`Downloaded ${results.length} results`, 'success');
+    });
+
+    btnMigrate.addEventListener('click', migrateV1Data);
+
+    // CSV Import
+    const csvFileInput = document.getElementById('csv-file-input');
+    document.getElementById('btn-import-csv').addEventListener('click', () => {
+      csvFileInput.click();
+    });
+
+    csvFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+
+        let imported = 0;
+        let skipped = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].match(/(".*?"|[^,]+)/g) || [];
+          const row = {};
+          headers.forEach((h, j) => {
+            let v = (values[j] || '').replace(/^"|"$/g, '');
+            row[h] = isNaN(v) || v === '' ? v : parseFloat(v);
+          });
+
+          if (completedSet.has(row.rule_id)) {
+            skipped++;
+            continue;
+          }
+
+          // Only import extinct/fixed (they don't need new metrics)
+          const cls = row.classification ? row.classification.trim().toLowerCase() : '';
+          if (cls === 'extinct' || cls === 'fixed') {
+            const migratedResult = {
+              rule_id: row.rule_id,
+              rule_string: row.rule_string,
+              lambda: row.lambda,
+              lambda_std: 0,
+              D: row.D,
+              gamma: row.gamma,
+              classification: row.classification,
+              period: row.period,
+              pop_final: row.population || row.pop_final || 0,
+              pop_peak: row.population || row.pop_final || 0,
+              pop_t100: row.classification === 'extinct' ? 0 : (row.population || 0),
+              time_to_settle: row.classification === 'extinct' ? 0 : 1,
+              cluster_count: 0,
+              largest_cluster_ratio: 0,
+              density_variance: 0,
+              edge_ratio: 0,
+              migrated: true
+            };
+            results.push(migratedResult);
+            completedSet.add(row.rule_id);
+            imported++;
+          }
+        }
+
+        const totalInCsv = lines.length - 1;
+        const periodicAperiodic = totalInCsv - imported - skipped;
+        log(`Imported ${imported} extinct/fixed rules from CSV`, 'success');
+        log(`CSV had ${totalInCsv} rules total. ${periodicAperiodic} periodic/aperiodic will be re-measured with new metrics.`, 'info');
+        log(`Total remaining: ${(TOTAL_RULES - completedSet.size).toLocaleString()} rules`, 'info');
+        saveCheckpoint();
+        updateProgress();
+      };
+      reader.readAsText(file);
+    });
+
+    btnClear.addEventListener('click', () => {
+      if (confirm('Clear all v2 survey data? (v1 data will be preserved)')) {
+        localStorage.removeItem(STORAGE_KEY_V2);
+        results = [];
+        completedSet.clear();
+        currentRuleIndex = 0;
+        recentResults = [];
+        resultsBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #444;">No results yet</td></tr>';
+        updateProgress();
+        log('Survey v2 data cleared', 'warning');
+        setButtonStates();
+        checkV1Data(); // Re-check for migration
+      }
+    });
+
+    // Initialize
+    loadCheckpoint();
+    checkV1Data();
+    updateProgress();
+    setButtonStates();
+  </script>
+</body>
+</html>

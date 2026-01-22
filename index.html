@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cells</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #a0a0a0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #3a3a3a;
+      margin-bottom: 1rem;
+    }
+
+    .main-container {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    #canvas-container {
+      border: 1px solid #1a1a1a;
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(0, 0, 0, 0.9);
+      position: relative;
+      width: 720px;
+      height: 720px;
+    }
+
+    canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    #grid-cpu, #grid-gpu {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #grid-cpu {
+      z-index: 1;
+    }
+
+    #grid-gpu {
+      z-index: 2;
+    }
+
+    #graph-canvas {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      pointer-events: none;
+    }
+
+    #fps-display {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 0.6rem;
+      color: #4a7a4a;
+      background: rgba(10, 10, 10, 0.8);
+      padding: 0.3rem 0.5rem;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    #gpu-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.5rem;
+      color: #7a4a7a;
+      background: rgba(10, 10, 10, 0.8);
+      padding: 0.2rem 0.4rem;
+      border-radius: 2px;
+      pointer-events: none;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    #gpu-badge.active {
+      color: #4a7a4a;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 140px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .control-group-label {
+      font-size: 0.55rem;
+      color: #353535;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+
+    button {
+      background: #121212;
+      border: 1px solid #1f1f1f;
+      color: #505050;
+      padding: 0.5rem 0.8rem;
+      font-family: inherit;
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    button:hover {
+      background: #181818;
+      border-color: #2a2a2a;
+      color: #707070;
+    }
+
+    button:active {
+      background: #0e0e0e;
+    }
+
+    button.active {
+      background: #141f14;
+      border-color: #1f2f1f;
+      color: #4a7a4a;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .stats {
+      font-size: 0.55rem;
+      color: #353535;
+      letter-spacing: 0.1em;
+      line-height: 1.8;
+    }
+
+    .stats-value {
+      color: #505050;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed-control {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .speed-value {
+      font-size: 0.55rem;
+      color: #404040;
+      min-width: 2.5ch;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 2px;
+      background: #1f1f1f;
+      border-radius: 1px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 8px;
+      height: 8px;
+      background: #353535;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: #454545;
+    }
+
+    select {
+      background: #121212;
+      border: 1px solid #1f1f1f;
+      color: #505050;
+      padding: 0.4rem 0.5rem;
+      font-family: inherit;
+      font-size: 0.55rem;
+      letter-spacing: 0.05em;
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    select:hover {
+      border-color: #2a2a2a;
+    }
+
+    .info {
+      margin-top: 1rem;
+      font-size: 0.5rem;
+      color: #282828;
+      text-align: center;
+      max-width: 600px;
+      line-height: 1.8;
+    }
+
+    .keyboard-hint {
+      display: inline-block;
+      background: #151515;
+      padding: 0.15rem 0.3rem;
+      border-radius: 2px;
+      margin: 0 0.1rem;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toggle-label {
+      font-size: 0.55rem;
+      color: #404040;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cells</h1>
+
+  <div class="main-container">
+    <div id="canvas-container">
+      <canvas id="grid-cpu"></canvas>
+      <canvas id="grid-gpu"></canvas>
+      <canvas id="graph-canvas" width="180" height="60"></canvas>
+      <div id="fps-display">-- fps</div>
+      <div id="gpu-badge">CPU</div>
+    </div>
+
+    <div class="sidebar">
+      <div class="control-group">
+        <div class="control-group-label">Simulation</div>
+        <button id="playPause">Play</button>
+        <button id="step">Step</button>
+        <button id="clear">Clear</button>
+        <button id="random">Random</button>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-label">Rules</div>
+        <select id="ruleSelect">
+          <optgroup label="Classic">
+            <option value="life">Conway's Life</option>
+            <option value="highlife">HighLife</option>
+            <option value="daynight">Day & Night</option>
+            <option value="seeds">Seeds</option>
+          </optgroup>
+          <optgroup label="Survey Discoveries">
+            <option value="B012S">B012/S (voids + flicker)</option>
+            <option value="B0123S0135678">B0123/S0135678</option>
+            <option value="B013S034">B013/S034 (blobs)</option>
+            <option value="B01S24">B01/S24 (high structure)</option>
+            <option value="B012S4">B012/S4 (voids)</option>
+            <option value="B02S03">B02/S03 (structured)</option>
+            <option value="B013S0">B013/S0 (life-like)</option>
+            <option value="B02S12">B02/S12 (life-like)</option>
+            <option value="B02S012">B02/S012 (life-like)</option>
+          </optgroup>
+          <optgroup label="Custom">
+            <option value="custom">Custom (edit below)</option>
+          </optgroup>
+        </select>
+        <input type="text" id="customRule" placeholder="B3/S23" style="display:none; margin-top:0.3rem; background:#121212; border:1px solid #1f1f1f; color:#505050; padding:0.4rem; font-family:inherit; font-size:0.55rem; width:100%;">
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-label">Grid Size</div>
+        <select id="gridSize">
+          <option value="128">128 x 128</option>
+          <option value="256">256 x 256</option>
+          <option value="512" selected>512 x 512</option>
+          <option value="1024">1024 x 1024</option>
+          <option value="2048">2048 x 2048</option>
+          <option value="4096">4096 x 4096</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-label">Compute</div>
+        <div class="toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="useGPU" checked style="accent-color: #4a7a4a;">
+            Use GPU (WebGPU)
+          </label>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="unlimitedFPS" style="accent-color: #4a7a4a;">
+            Unlimited FPS
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-label">Boundary</div>
+        <select id="boundarySelect">
+          <option value="wrap">Wrap (Toroidal)</option>
+          <option value="fixed">Fixed (Dead)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-label">Patterns</div>
+        <button id="glider">Glider</button>
+        <button id="rpentomino">R-pentomino</button>
+        <button id="acorn">Acorn</button>
+      </div>
+
+      <div class="control-group speed-control">
+        <div class="control-group-label">Target FPS</div>
+        <div class="speed-row">
+          <input type="range" id="speed" min="1" max="120" value="60">
+          <span class="speed-value" id="speedValue">60</span>
+        </div>
+      </div>
+
+      <div class="control-group speed-control">
+        <div class="control-group-label">Noise (energy)</div>
+        <div class="toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="noiseEnabled" style="accent-color: #7a7a4a;">
+            Enable noise
+          </label>
+        </div>
+        <div class="speed-row">
+          <input type="range" id="noiseRate" min="1" max="1000" value="100">
+          <span class="speed-value" id="noiseRateValue">100</span>
+        </div>
+        <div style="font-size:0.5rem; color:#353535;">cells/frame</div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-group-label">Display</div>
+        <select id="colorMode">
+          <option value="mono">Monochrome</option>
+          <option value="age">Age Gradient</option>
+        </select>
+      </div>
+
+      <div class="stats">
+        <div>Gen <span class="stats-value" id="generation">0</span></div>
+        <div>Pop <span class="stats-value" id="population">0</span></div>
+        <div>Size <span class="stats-value" id="sizeDisplay">512x512</span></div>
+        <div>Rule <span class="stats-value" id="ruleDisplay">B3/S23</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <span class="keyboard-hint">Space</span> play/pause
+    <span class="keyboard-hint">S</span> step
+    <span class="keyboard-hint">C</span> clear
+    <span class="keyboard-hint">R</span> random
+    <span class="keyboard-hint">G</span> toggle GPU
+  </div>
+
+  <script>
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    let GRID_SIZE = 512;
+    let CANVAS_SIZE = 720;
+
+    const cpuCanvas = document.getElementById('grid-cpu');
+    const gpuCanvas = document.getElementById('grid-gpu');
+    const ctx = cpuCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graph-canvas');
+    const graphCtx = graphCanvas.getContext('2d');
+
+    cpuCanvas.width = CANVAS_SIZE;
+    cpuCanvas.height = CANVAS_SIZE;
+    gpuCanvas.width = CANVAS_SIZE;
+    gpuCanvas.height = CANVAS_SIZE;
+
+    // Prevent context menu on canvas
+    cpuCanvas.addEventListener('contextmenu', e => e.preventDefault());
+    gpuCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    // ============================================
+    // RULES
+    // ============================================
+    const rules = {
+      life:     { birth: [3], survival: [2, 3], name: 'B3/S23' },
+      highlife: { birth: [3, 6], survival: [2, 3], name: 'B36/S23' },
+      daynight: { birth: [3, 6, 7, 8], survival: [3, 4, 6, 7, 8], name: 'B3678/S34678' },
+      seeds:    { birth: [2], survival: [], name: 'B2/S' },
+      'B01S24':   { birth: [0, 1], survival: [2, 4], name: 'B01/S24' },
+      'B013S034': { birth: [0, 1, 3], survival: [0, 3, 4], name: 'B013/S034' },
+      'B012S4':   { birth: [0, 1, 2], survival: [4], name: 'B012/S4' },
+      'B02S03':   { birth: [0, 2], survival: [0, 3], name: 'B02/S03' },
+      'B013S0':   { birth: [0, 1, 3], survival: [0], name: 'B013/S0' },
+      'B02S12':   { birth: [0, 2], survival: [1, 2], name: 'B02/S12' },
+      'B02S012':  { birth: [0, 2], survival: [0, 1, 2], name: 'B02/S012' },
+      'B0123S0135678': { birth: [0, 1, 2, 3], survival: [0, 1, 3, 5, 6, 7, 8], name: 'B0123/S0135678' },
+      'B012S': { birth: [0, 1, 2], survival: [], name: 'B012/S' },
+      'custom':   { birth: [3], survival: [2, 3], name: 'Custom' }
+    };
+
+    function parseBSNotation(str) {
+      const match = str.match(/^B(\d*)\/S(\d*)$/i);
+      if (!match) return null;
+      const birth = match[1] ? match[1].split('').map(Number) : [];
+      const survival = match[2] ? match[2].split('').map(Number) : [];
+      return { birth, survival, name: str.toUpperCase() };
+    }
+
+    function ruleToBitmasks(rule) {
+      let birthMask = 0, survivalMask = 0;
+      for (const n of rule.birth) birthMask |= (1 << n);
+      for (const n of rule.survival) survivalMask |= (1 << n);
+      return { birthMask, survivalMask };
+    }
+
+    // ============================================
+    // STATE
+    // ============================================
+    let currentRule = 'life';
+    let boundary = 'wrap';
+    let colorMode = 'mono';
+    let useGPU = true;
+    let gpuAvailable = false;
+    let unlimitedFPS = false;
+    let noiseEnabled = false;
+    let noiseRate = 100; // cells per frame
+
+    let gridA, gridB;
+    let currentGrid, nextGrid;
+
+    let isPlaying = false;
+    let generation = 0;
+    let population = 0;
+    let targetFPS = 60;
+    let actualFPS = 0;
+
+    const popHistory = [];
+    const maxHistoryPoints = 200;
+
+    // FPS tracking
+    let frameCount = 0;
+    let lastFPSUpdate = performance.now();
+    let lastFrameTime = 0;
+
+    // ============================================
+    // CPU IMPLEMENTATION
+    // ============================================
+    function initCPUGrids() {
+      gridA = new Uint8Array(GRID_SIZE * GRID_SIZE);
+      gridB = new Uint8Array(GRID_SIZE * GRID_SIZE);
+      currentGrid = gridA;
+      nextGrid = gridB;
+    }
+
+    function cpuStep() {
+      const rule = rules[currentRule];
+      const { birthMask, survivalMask } = ruleToBitmasks(rule);
+      const size = GRID_SIZE;
+      population = 0;
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          let neighbors = 0;
+
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+
+              let nx, ny;
+              if (boundary === 'wrap') {
+                nx = (x + dx + size) % size;
+                ny = (y + dy + size) % size;
+              } else {
+                nx = x + dx;
+                ny = y + dy;
+                if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
+              }
+
+              if (currentGrid[ny * size + nx] > 0) neighbors++;
+            }
+          }
+
+          const idx = y * size + x;
+          const alive = currentGrid[idx] > 0;
+
+          if (alive) {
+            nextGrid[idx] = ((survivalMask & (1 << neighbors)) !== 0) ? Math.min(currentGrid[idx] + 1, 255) : 0;
+          } else {
+            nextGrid[idx] = ((birthMask & (1 << neighbors)) !== 0) ? 1 : 0;
+          }
+
+          if (nextGrid[idx] > 0) population++;
+        }
+      }
+
+      [currentGrid, nextGrid] = [nextGrid, currentGrid];
+      generation++;
+    }
+
+    // ============================================
+    // WEBGPU IMPLEMENTATION
+    // ============================================
+    let gpuDevice, gpuContext, gpuFormat;
+    let computePipeline, renderPipeline;
+    let gridBufferA, gridBufferB, uniformBuffer, renderBuffer;
+    let computeBindGroupA, computeBindGroupB;
+    let renderBindGroup;
+    let gpuCurrentBuffer = 0;
+
+    const computeShader = `
+      struct Uniforms {
+        size: u32,
+        birthMask: u32,
+        survivalMask: u32,
+        boundary: u32,
+      }
+
+      @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+      @group(0) @binding(1) var<storage, read> gridIn: array<u32>;
+      @group(0) @binding(2) var<storage, read_write> gridOut: array<u32>;
+
+      @compute @workgroup_size(16, 16)
+      fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let size = uniforms.size;
+        if (gid.x >= size || gid.y >= size) { return; }
+
+        var neighbors: u32 = 0;
+
+        for (var dy: i32 = -1; dy <= 1; dy++) {
+          for (var dx: i32 = -1; dx <= 1; dx++) {
+            if (dx == 0 && dy == 0) { continue; }
+
+            var nx: i32 = i32(gid.x) + dx;
+            var ny: i32 = i32(gid.y) + dy;
+
+            if (uniforms.boundary == 0) {
+              // Wrap
+              nx = (nx + i32(size)) % i32(size);
+              ny = (ny + i32(size)) % i32(size);
+            } else {
+              // Fixed boundary
+              if (nx < 0 || nx >= i32(size) || ny < 0 || ny >= i32(size)) { continue; }
+            }
+
+            if (gridIn[u32(ny) * size + u32(nx)] > 0) { neighbors++; }
+          }
+        }
+
+        let idx = gid.y * size + gid.x;
+        let alive = gridIn[idx] > 0;
+        let age = gridIn[idx];
+
+        var newState: u32 = 0;
+        if (alive) {
+          if ((uniforms.survivalMask & (1u << neighbors)) != 0) {
+            newState = min(age + 1, 255);
+          }
+        } else {
+          if ((uniforms.birthMask & (1u << neighbors)) != 0) {
+            newState = 1;
+          }
+        }
+
+        gridOut[idx] = newState;
+      }
+    `;
+
+    const renderShader = `
+      struct VertexOutput {
+        @builtin(position) position: vec4<f32>,
+        @location(0) uv: vec2<f32>,
+      }
+
+      @vertex
+      fn vertexMain(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
+        var pos = array<vec2<f32>, 6>(
+          vec2<f32>(-1.0, -1.0),
+          vec2<f32>(1.0, -1.0),
+          vec2<f32>(-1.0, 1.0),
+          vec2<f32>(-1.0, 1.0),
+          vec2<f32>(1.0, -1.0),
+          vec2<f32>(1.0, 1.0),
+        );
+
+        var output: VertexOutput;
+        output.position = vec4<f32>(pos[vertexIndex], 0.0, 1.0);
+        output.uv = pos[vertexIndex] * 0.5 + 0.5;
+        output.uv.y = 1.0 - output.uv.y;
+        return output;
+      }
+
+      struct RenderUniforms {
+        size: u32,
+        colorMode: u32,
+        pad1: u32,
+        pad2: u32,
+      }
+
+      @group(0) @binding(0) var<uniform> uniforms: RenderUniforms;
+      @group(0) @binding(1) var<storage, read> grid: array<u32>;
+
+      @fragment
+      fn fragmentMain(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+        let size = uniforms.size;
+        let x = u32(uv.x * f32(size));
+        let y = u32(uv.y * f32(size));
+        let idx = y * size + x;
+        let state = grid[idx];
+
+        if (state == 0) {
+          return vec4<f32>(0.04, 0.04, 0.04, 1.0);
+        }
+
+        if (uniforms.colorMode == 0) {
+          // Mono
+          return vec4<f32>(0.4, 0.55, 0.4, 1.0);
+        } else {
+          // Age gradient
+          let t = min(f32(state) / 60.0, 1.0);
+          let r = 0.2 + t * 0.35;
+          let g = 0.31 + t * 0.31;
+          let b = 0.2 - t * 0.08;
+          return vec4<f32>(r, g, b, 1.0);
+        }
+      }
+    `;
+
+    async function initWebGPU() {
+      if (!navigator.gpu) {
+        console.log('WebGPU not supported');
+        return false;
+      }
+
+      try {
+        const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        if (!adapter) {
+          console.log('No GPU adapter found');
+          return false;
+        }
+
+        gpuDevice = await adapter.requestDevice();
+        gpuContext = gpuCanvas.getContext('webgpu');
+        gpuFormat = navigator.gpu.getPreferredCanvasFormat();
+
+        gpuContext.configure({
+          device: gpuDevice,
+          format: gpuFormat,
+          alphaMode: 'opaque',
+        });
+
+        // Create compute pipeline
+        const computeModule = gpuDevice.createShaderModule({ code: computeShader });
+        computePipeline = gpuDevice.createComputePipeline({
+          layout: 'auto',
+          compute: { module: computeModule, entryPoint: 'main' }
+        });
+
+        // Create render pipeline
+        const renderModule = gpuDevice.createShaderModule({ code: renderShader });
+        renderPipeline = gpuDevice.createRenderPipeline({
+          layout: 'auto',
+          vertex: { module: renderModule, entryPoint: 'vertexMain' },
+          fragment: {
+            module: renderModule,
+            entryPoint: 'fragmentMain',
+            targets: [{ format: gpuFormat }]
+          },
+          primitive: { topology: 'triangle-list' }
+        });
+
+        await createGPUBuffers();
+
+        console.log('WebGPU initialized successfully');
+        return true;
+      } catch (e) {
+        console.log('WebGPU init failed:', e);
+        return false;
+      }
+    }
+
+    async function createGPUBuffers() {
+      const bufferSize = GRID_SIZE * GRID_SIZE * 4; // u32 per cell
+
+      gridBufferA = gpuDevice.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+
+      gridBufferB = gpuDevice.createBuffer({
+        size: bufferSize,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      });
+
+      uniformBuffer = gpuDevice.createBuffer({
+        size: 16, // 4 u32s
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      renderBuffer = gpuDevice.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      computeBindGroupA = gpuDevice.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: gridBufferA } },
+          { binding: 2, resource: { buffer: gridBufferB } },
+        ],
+      });
+
+      computeBindGroupB = gpuDevice.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: gridBufferB } },
+          { binding: 2, resource: { buffer: gridBufferA } },
+        ],
+      });
+
+      renderBindGroup = gpuDevice.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: renderBuffer } },
+          { binding: 1, resource: { buffer: gridBufferA } },
+        ],
+      });
+
+      // Also create CPU grids for sync
+      initCPUGrids();
+    }
+
+    function uploadGridToGPU() {
+      const data = new Uint32Array(currentGrid);
+      gpuDevice.queue.writeBuffer(gridBufferA, 0, data);
+      gpuCurrentBuffer = 0;
+    }
+
+    async function downloadGridFromGPU() {
+      const readBuffer = gpuDevice.createBuffer({
+        size: GRID_SIZE * GRID_SIZE * 4,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+
+      const sourceBuffer = gpuCurrentBuffer === 0 ? gridBufferA : gridBufferB;
+
+      const commandEncoder = gpuDevice.createCommandEncoder();
+      commandEncoder.copyBufferToBuffer(sourceBuffer, 0, readBuffer, 0, GRID_SIZE * GRID_SIZE * 4);
+      gpuDevice.queue.submit([commandEncoder.finish()]);
+
+      await readBuffer.mapAsync(GPUMapMode.READ);
+      const data = new Uint32Array(readBuffer.getMappedRange());
+
+      population = 0;
+      for (let i = 0; i < data.length; i++) {
+        currentGrid[i] = data[i];
+        if (data[i] > 0) population++;
+      }
+
+      readBuffer.unmap();
+      readBuffer.destroy();
+    }
+
+    function gpuStep() {
+      const rule = rules[currentRule];
+      const { birthMask, survivalMask } = ruleToBitmasks(rule);
+
+      // Update uniforms
+      const uniformData = new Uint32Array([
+        GRID_SIZE,
+        birthMask,
+        survivalMask,
+        boundary === 'wrap' ? 0 : 1
+      ]);
+      gpuDevice.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+      const commandEncoder = gpuDevice.createCommandEncoder();
+
+      // Compute pass
+      const computePass = commandEncoder.beginComputePass();
+      computePass.setPipeline(computePipeline);
+      computePass.setBindGroup(0, gpuCurrentBuffer === 0 ? computeBindGroupA : computeBindGroupB);
+      computePass.dispatchWorkgroups(Math.ceil(GRID_SIZE / 16), Math.ceil(GRID_SIZE / 16));
+      computePass.end();
+
+      gpuDevice.queue.submit([commandEncoder.finish()]);
+      gpuCurrentBuffer = 1 - gpuCurrentBuffer;
+      generation++;
+    }
+
+    function gpuRender() {
+      // Update render uniforms
+      const renderData = new Uint32Array([
+        GRID_SIZE,
+        colorMode === 'mono' ? 0 : 1,
+        0, 0
+      ]);
+      gpuDevice.queue.writeBuffer(renderBuffer, 0, renderData);
+
+      // Update render bind group to use current buffer
+      renderBindGroup = gpuDevice.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: renderBuffer } },
+          { binding: 1, resource: { buffer: gpuCurrentBuffer === 0 ? gridBufferA : gridBufferB } },
+        ],
+      });
+
+      const commandEncoder = gpuDevice.createCommandEncoder();
+      const renderPass = commandEncoder.beginRenderPass({
+        colorAttachments: [{
+          view: gpuContext.getCurrentTexture().createView(),
+          clearValue: { r: 0.04, g: 0.04, b: 0.04, a: 1.0 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        }]
+      });
+
+      renderPass.setPipeline(renderPipeline);
+      renderPass.setBindGroup(0, renderBindGroup);
+      renderPass.draw(6);
+      renderPass.end();
+
+      gpuDevice.queue.submit([commandEncoder.finish()]);
+    }
+
+    // ============================================
+    // CPU RENDERING
+    // ============================================
+    function cpuRender() {
+      const cellSize = CANVAS_SIZE / GRID_SIZE;
+
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const state = currentGrid[y * GRID_SIZE + x];
+          if (state > 0) {
+            if (colorMode === 'mono') {
+              ctx.fillStyle = '#668866';
+            } else {
+              const t = Math.min(state / 60, 1);
+              const r = Math.floor(50 + t * 90);
+              const g = Math.floor(80 + t * 80);
+              const b = Math.floor(50 - t * 20);
+              ctx.fillStyle = `rgb(${r},${g},${b})`;
+            }
+            ctx.fillRect(x * cellSize, y * cellSize, Math.max(1, cellSize - 0.5), Math.max(1, cellSize - 0.5));
+          }
+        }
+      }
+    }
+
+    // ============================================
+    // COMMON FUNCTIONS
+    // ============================================
+    function clearGrid() {
+      if (useGPU && gpuAvailable) {
+        const zeros = new Uint32Array(GRID_SIZE * GRID_SIZE);
+        gpuDevice.queue.writeBuffer(gridBufferA, 0, zeros);
+        gpuDevice.queue.writeBuffer(gridBufferB, 0, zeros);
+        gpuCurrentBuffer = 0;
+      }
+      currentGrid.fill(0);
+      generation = 0;
+      population = 0;
+      popHistory.length = 0;
+      updateStats();
+      render();
+    }
+
+    function randomize(density = 0.3) {
+      for (let i = 0; i < currentGrid.length; i++) {
+        currentGrid[i] = Math.random() < density ? 1 : 0;
+      }
+      if (useGPU && gpuAvailable) {
+        uploadGridToGPU();
+      }
+      recountPopulation();
+      render();
+    }
+
+    function recountPopulation() {
+      population = 0;
+      for (let i = 0; i < currentGrid.length; i++) {
+        if (currentGrid[i] > 0) population++;
+      }
+      updateStats();
+    }
+
+
+    function step() {
+      if (useGPU && gpuAvailable) {
+        gpuStep();
+        // Periodically sync population count (every 10 frames to avoid slowdown)
+        if (generation % 10 === 0) {
+          downloadGridFromGPU();
+        }
+        // Inject noise after GPU step (modifies CPU grid, then uploads)
+        if (noiseEnabled && noiseRate > 0) {
+          injectNoiseToGrid();
+          uploadGridToGPU();
+        }
+      } else {
+        // Inject noise before CPU step
+        if (noiseEnabled && noiseRate > 0) {
+          injectNoiseToGrid();
+        }
+        cpuStep();
+      }
+
+      popHistory.push(population);
+      if (popHistory.length > maxHistoryPoints) popHistory.shift();
+      updateStats();
+    }
+
+    function injectNoiseToGrid() {
+      const totalCells = GRID_SIZE * GRID_SIZE;
+      for (let i = 0; i < noiseRate; i++) {
+        const idx = Math.floor(Math.random() * totalCells);
+        // 50% chance birth, 50% chance death
+        if (Math.random() < 0.5) {
+          currentGrid[idx] = 1; // birth
+        } else {
+          currentGrid[idx] = 0; // death
+        }
+      }
+    }
+
+    function render() {
+      if (useGPU && gpuAvailable) {
+        gpuRender();
+      } else {
+        cpuRender();
+      }
+      drawPopGraph();
+    }
+
+    function updateStats() {
+      document.getElementById('generation').textContent = generation.toLocaleString();
+      document.getElementById('population').textContent = population.toLocaleString();
+      document.getElementById('sizeDisplay').textContent = `${GRID_SIZE}x${GRID_SIZE}`;
+      document.getElementById('ruleDisplay').textContent = rules[currentRule].name;
+    }
+
+    function updateFPSDisplay() {
+      document.getElementById('fps-display').textContent = `${actualFPS} fps`;
+    }
+
+    function updateGPUBadge() {
+      const badge = document.getElementById('gpu-badge');
+      if (useGPU && gpuAvailable) {
+        badge.textContent = 'GPU';
+        badge.classList.add('active');
+        gpuCanvas.style.display = 'block';
+        cpuCanvas.style.display = 'none';
+      } else {
+        badge.textContent = 'CPU';
+        badge.classList.remove('active');
+        gpuCanvas.style.display = 'none';
+        cpuCanvas.style.display = 'block';
+      }
+    }
+
+    function drawPopGraph() {
+      if (popHistory.length < 2) return;
+
+      graphCtx.fillStyle = 'rgba(10, 10, 10, 0.85)';
+      graphCtx.fillRect(0, 0, graphCanvas.width, graphCanvas.height);
+
+      graphCtx.strokeStyle = '#1a1a1a';
+      graphCtx.lineWidth = 1;
+      graphCtx.strokeRect(0, 0, graphCanvas.width, graphCanvas.height);
+
+      const maxPop = Math.max(...popHistory, 1);
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      const padding = 4;
+
+      graphCtx.strokeStyle = '#2a4a2a';
+      graphCtx.lineWidth = 1;
+      graphCtx.beginPath();
+
+      for (let i = 0; i < popHistory.length; i++) {
+        const x = padding + (i / (popHistory.length - 1)) * (w - padding * 2);
+        const y = h - padding - (popHistory[i] / maxPop) * (h - padding * 2);
+
+        if (i === 0) graphCtx.moveTo(x, y);
+        else graphCtx.lineTo(x, y);
+      }
+      graphCtx.stroke();
+
+      graphCtx.fillStyle = '#353535';
+      graphCtx.font = '8px monospace';
+      graphCtx.fillText(maxPop.toLocaleString(), padding, 10);
+    }
+
+    // ============================================
+    // PATTERNS
+    // ============================================
+    function placePattern(pattern, startY, startX) {
+      for (let r = 0; r < pattern.length; r++) {
+        for (let c = 0; c < pattern[r].length; c++) {
+          if (pattern[r][c]) {
+            const y = (startY + r) % GRID_SIZE;
+            const x = (startX + c) % GRID_SIZE;
+            currentGrid[y * GRID_SIZE + x] = 1;
+          }
+        }
+      }
+      if (useGPU && gpuAvailable) {
+        uploadGridToGPU();
+      }
+      recountPopulation();
+      render();
+    }
+
+    const patterns = {
+      glider: [
+        [0, 1, 0],
+        [0, 0, 1],
+        [1, 1, 1]
+      ],
+      rpentomino: [
+        [0, 1, 1],
+        [1, 1, 0],
+        [0, 1, 0]
+      ],
+      acorn: [
+        [0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0],
+        [1, 1, 0, 0, 1, 1, 1]
+      ]
+    };
+
+    // ============================================
+    // MAIN LOOP
+    // ============================================
+    function animate(time) {
+      // FPS calculation
+      frameCount++;
+      if (time - lastFPSUpdate >= 1000) {
+        actualFPS = frameCount;
+        frameCount = 0;
+        lastFPSUpdate = time;
+        updateFPSDisplay();
+      }
+
+      if (isPlaying) {
+        if (unlimitedFPS) {
+          // Run as fast as possible
+          step();
+          render();
+        } else {
+          const interval = 1000 / targetFPS;
+          if (time - lastFrameTime >= interval) {
+            step();
+            render();
+            lastFrameTime = time;
+          }
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // ============================================
+    // RESIZE GRID
+    // ============================================
+    async function resizeGrid(newSize) {
+      GRID_SIZE = newSize;
+      initCPUGrids();
+
+      if (gpuAvailable) {
+        // Recreate GPU buffers
+        gridBufferA?.destroy();
+        gridBufferB?.destroy();
+        await createGPUBuffers();
+      }
+
+      generation = 0;
+      population = 0;
+      popHistory.length = 0;
+      updateStats();
+      render();
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    document.getElementById('playPause').addEventListener('click', (e) => {
+      isPlaying = !isPlaying;
+      e.target.textContent = isPlaying ? 'Pause' : 'Play';
+      e.target.classList.toggle('active', isPlaying);
+    });
+
+    document.getElementById('step').addEventListener('click', () => {
+      if (!isPlaying) {
+        step();
+        render();
+      }
+    });
+
+    document.getElementById('clear').addEventListener('click', clearGrid);
+    document.getElementById('random').addEventListener('click', () => randomize(0.3));
+
+    document.getElementById('ruleSelect').addEventListener('change', (e) => {
+      const customInput = document.getElementById('customRule');
+      if (e.target.value === 'custom') {
+        customInput.style.display = 'block';
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';
+        currentRule = e.target.value;
+        updateStats();
+      }
+    });
+
+    document.getElementById('customRule').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const parsed = parseBSNotation(e.target.value.trim());
+        if (parsed) {
+          rules['custom'] = parsed;
+          currentRule = 'custom';
+          updateStats();
+          e.target.style.borderColor = '#2a4a2a';
+        } else {
+          e.target.style.borderColor = '#4a2a2a';
+        }
+      }
+    });
+
+    document.getElementById('gridSize').addEventListener('change', async (e) => {
+      const newSize = parseInt(e.target.value);
+      await resizeGrid(newSize);
+    });
+
+    document.getElementById('useGPU').addEventListener('change', async (e) => {
+      useGPU = e.target.checked;
+      if (useGPU && gpuAvailable) {
+        uploadGridToGPU();
+      } else if (useGPU && !gpuAvailable) {
+        // Try to init GPU
+        gpuAvailable = await initWebGPU();
+        if (gpuAvailable) {
+          await createGPUBuffers();
+          uploadGridToGPU();
+        } else {
+          e.target.checked = false;
+          useGPU = false;
+        }
+      }
+      updateGPUBadge();
+      render();
+    });
+
+    document.getElementById('unlimitedFPS').addEventListener('change', (e) => {
+      unlimitedFPS = e.target.checked;
+    });
+
+    document.getElementById('boundarySelect').addEventListener('change', (e) => {
+      boundary = e.target.value;
+    });
+
+    document.getElementById('colorMode').addEventListener('change', (e) => {
+      colorMode = e.target.value;
+      render();
+    });
+
+    document.getElementById('speed').addEventListener('input', (e) => {
+      targetFPS = parseInt(e.target.value);
+      document.getElementById('speedValue').textContent = targetFPS;
+    });
+
+    document.getElementById('noiseEnabled').addEventListener('change', (e) => {
+      noiseEnabled = e.target.checked;
+    });
+
+    document.getElementById('noiseRate').addEventListener('input', (e) => {
+      noiseRate = parseInt(e.target.value);
+      document.getElementById('noiseRateValue').textContent = noiseRate;
+    });
+
+    // Pattern buttons
+    document.getElementById('glider').addEventListener('click', () => {
+      clearGrid();
+      placePattern(patterns.glider, Math.floor(GRID_SIZE / 4), Math.floor(GRID_SIZE / 4));
+    });
+
+    document.getElementById('rpentomino').addEventListener('click', () => {
+      clearGrid();
+      placePattern(patterns.rpentomino, Math.floor(GRID_SIZE / 2), Math.floor(GRID_SIZE / 2));
+    });
+
+    document.getElementById('acorn').addEventListener('click', () => {
+      clearGrid();
+      placePattern(patterns.acorn, Math.floor(GRID_SIZE / 2), Math.floor(GRID_SIZE / 2));
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        document.getElementById('playPause').click();
+      } else if (e.code === 'KeyS') {
+        document.getElementById('step').click();
+      } else if (e.code === 'KeyC') {
+        document.getElementById('clear').click();
+      } else if (e.code === 'KeyR') {
+        document.getElementById('random').click();
+      } else if (e.code === 'KeyG') {
+        document.getElementById('useGPU').click();
+      }
+    });
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    async function init() {
+      initCPUGrids();
+
+      // Try to init WebGPU
+      gpuAvailable = await initWebGPU();
+
+      if (!gpuAvailable) {
+        useGPU = false;
+        document.getElementById('useGPU').checked = false;
+        document.getElementById('useGPU').disabled = true;
+        console.log('Running in CPU mode');
+      } else {
+        await createGPUBuffers();
+        console.log('GPU mode available');
+      }
+
+      updateGPUBadge();
+      updateStats();
+      render();
+      requestAnimationFrame(animate);
+    }
+
+    init();
+  </script>
+</body>
+</html>

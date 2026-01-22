@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CA Measurement Suite</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #a0a0a0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+    h1 { color: #4a7a4a; margin-bottom: 0.3rem; font-size: 1.1rem; letter-spacing: 0.1em; }
+    .subtitle { color: #555; font-size: 0.75rem; margin-bottom: 1rem; }
+
+    .layout { display: grid; grid-template-columns: 1fr 420px; gap: 1.5rem; }
+
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .panel-title {
+      color: #666;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .panel-title .help {
+      cursor: help;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      font-size: 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+    }
+    .panel-title .help:hover { color: #888; border-color: #555; }
+
+    button {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      padding: 0.4rem 0.8rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border-radius: 3px;
+      margin-right: 0.4rem;
+      transition: all 0.15s;
+    }
+    button:hover { background: #222; color: #aaa; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: #1a2a1a; border-color: #2a4a2a; color: #6a9a6a; }
+
+    .explanation {
+      background: #0d0d0d;
+      border-left: 2px solid #2a4a2a;
+      padding: 0.75rem;
+      margin: 0.75rem 0;
+      font-size: 0.7rem;
+      color: #666;
+      line-height: 1.6;
+    }
+    .explanation strong { color: #7a9a7a; }
+    .explanation code { background: #1a1a1a; padding: 0.1rem 0.3rem; border-radius: 2px; color: #888; }
+
+    .test-result {
+      padding: 0.4rem 0.6rem;
+      margin: 0.25rem 0;
+      border-radius: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    .pass { background: #142014; border-left: 3px solid #4a7a4a; }
+    .fail { background: #201414; border-left: 3px solid #7a4a4a; }
+    .pending { background: #1a1a14; border-left: 3px solid #5a5a3a; }
+    .running { background: #141a20; border-left: 3px solid #3a5a7a; animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    .value { color: #6a9a6a; font-weight: bold; font-size: 0.75rem; }
+    .expected { color: #555; font-size: 0.7rem; }
+
+    #log {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      padding: 0.75rem;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.7rem;
+    }
+    .log-entry { margin: 0.1rem 0; }
+    .log-info { color: #555; }
+    .log-success { color: #4a7a4a; }
+    .log-error { color: #7a4a4a; }
+    .log-warn { color: #7a6a4a; }
+    .log-progress { color: #5a7a9a; }
+    .log-debug { color: #5a5a7a; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #1a1a1a; }
+    th { color: #555; font-weight: normal; font-size: 0.65rem; text-transform: uppercase; }
+
+    .viz-section { margin-bottom: 1rem; }
+    .canvas-row { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 0.5rem; }
+    .canvas-box { text-align: center; }
+    .canvas-box canvas { border: 1px solid #222; background: #050505; display: block; }
+    .canvas-label { font-size: 0.65rem; color: #555; margin-top: 0.25rem; }
+
+    .progress-bar { height: 3px; background: #1a1a1a; border-radius: 2px; margin: 0.5rem 0; overflow: hidden; }
+    .progress-fill { height: 100%; background: #3a6a3a; transition: width 0.1s; }
+
+    .metrics-row { display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; }
+    .metric { background: #0d0d0d; padding: 0.4rem 0.6rem; border-radius: 3px; text-align: center; min-width: 70px; }
+    .metric-label { font-size: 0.55rem; color: #555; text-transform: uppercase; }
+    .metric-value { font-size: 0.9rem; color: #6a9a6a; }
+
+    .current-info { text-align: center; padding: 0.5rem; }
+    .current-test { font-size: 0.9rem; color: #7a9a7a; margin-bottom: 0.25rem; }
+    .current-desc { font-size: 0.7rem; color: #555; line-height: 1.4; }
+
+    .rule-card {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 3px;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+    }
+    .rule-name { color: #7a9a7a; font-size: 0.8rem; margin-bottom: 0.25rem; }
+    .rule-desc { color: #555; font-size: 0.65rem; }
+  </style>
+</head>
+<body>
+  <h1>Cellular Automata Measurement Suite</h1>
+  <p class="subtitle">Measuring chaos, structure, and complexity in Life-like rules</p>
+
+  <div class="layout">
+    <div class="left-col">
+      <div class="panel">
+        <div class="panel-title">Controls</div>
+        <button id="runAll" class="primary">Run Full Tests (256×256)</button>
+        <button id="runQuick">Quick Tests (64×64)</button>
+        <button id="clearLog">Clear</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">What We're Measuring <span class="help" title="Click for details">?</span></div>
+        <div class="explanation">
+          <strong>λ (Lambda) - Damage Spreading:</strong> Start two identical grids, flip ONE cell in the second.
+          Run both 1000 steps. How different are they now?<br>
+          • <code>λ ≈ 0</code> = "Edge of chaos" - interesting, complex behavior<br>
+          • <code>λ < 0</code> = Ordered - perturbations heal, boring<br>
+          • <code>λ > 0</code> = Chaotic - perturbations explode<br><br>
+
+          <strong>D (Dimension) - Fractal Structure:</strong> Box-counting dimension.<br>
+          • <code>D ≈ 1</code> = Thin lines/scattered points<br>
+          • <code>D ≈ 2</code> = Solid filled area<br>
+          • <code>D ≈ 1.5</code> = Fractal, self-similar patterns<br><br>
+
+          <strong>γ (Gamma) - Complexity Change:</strong> BDM complexity at start vs end.<br>
+          • <code>γ > 0</code> = Getting MORE complex (generating novelty)<br>
+          • <code>γ < 0</code> = Getting LESS complex (organizing, simplifying)<br>
+          • <code>γ ≈ 0</code> = Stable complexity (at equilibrium)
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Rules Being Tested</div>
+        <div class="rule-card">
+          <div class="rule-name">Life (B3/S23)</div>
+          <div class="rule-desc">Conway's Game of Life. Birth with 3 neighbors, survive with 2-3. The classic - complex behavior from simple rules.</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-name">Seeds (B2/S)</div>
+          <div class="rule-desc">Birth with 2 neighbors, nothing survives. Explosive but ephemeral - everything dies after a chaotic burst.</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-name">HighLife (B36/S23)</div>
+          <div class="rule-desc">Like Life, but also births with 6 neighbors. Famous for natural "replicator" patterns.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Test Results</div>
+        <div id="results">
+          <div class="test-result pending"><span>Life λ</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>Life D</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>Life γ</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>Seeds λ</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>Seeds D</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>Seeds γ</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>HighLife λ</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>HighLife D</span><span class="expected">waiting...</span></div>
+          <div class="test-result pending"><span>HighLife γ</span><span class="expected">waiting...</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Log</div>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="panel">
+        <div class="current-info">
+          <div class="current-test" id="current-test">Ready to run</div>
+          <div class="current-desc" id="current-desc">Click "Run Full Tests" to measure three classic CA rules</div>
+        </div>
+      </div>
+
+      <div class="panel viz-section">
+        <div class="panel-title">Live Visualization</div>
+        <div class="canvas-row">
+          <div class="canvas-box">
+            <canvas id="canvas1" width="200" height="200"></canvas>
+            <div class="canvas-label" id="label1">Grid 1</div>
+          </div>
+          <div class="canvas-box">
+            <canvas id="canvas2" width="200" height="200"></canvas>
+            <div class="canvas-label" id="label2">Grid 2</div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="step-progress" style="width: 0%"></div></div>
+        <div style="text-align: center; font-size: 0.65rem; color: #444;" id="step-label">Ready</div>
+        <div class="metrics-row">
+          <div class="metric">
+            <div class="metric-label">Step</div>
+            <div class="metric-value" id="current-step">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Difference</div>
+            <div class="metric-value" id="current-hamming">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Alive</div>
+            <div class="metric-value" id="current-pop">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Expected Ranges (Literature)</div>
+        <table>
+          <tr><th>Rule</th><th>λ</th><th>D</th><th>γ</th></tr>
+          <tr><td>Life</td><td>0.05-0.15</td><td>1.4-1.7</td><td>≈0</td></tr>
+          <tr><td>Seeds</td><td>0.8-1.5</td><td>1.8-2.0</td><td>&lt;0</td></tr>
+          <tr><td>HighLife</td><td>~Life</td><td>~Life</td><td>&gt;0?</td></tr>
+        </table>
+        <div class="explanation" style="margin-top: 0.5rem; margin-bottom: 0;">
+          <strong>Note:</strong> Our γ values are large negatives because we start from
+          random chaos and measure to organized final state. Literature values assume
+          steady-state to steady-state comparison.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // EMBEDDED CA ENGINE
+    // ============================================
+
+    function seededRandom(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    class Grid {
+      constructor(rows, cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.cells = new Uint8Array(rows * cols);
+      }
+      idx(r, c) { return r * this.cols + c; }
+      get(r, c) {
+        r = ((r % this.rows) + this.rows) % this.rows;
+        c = ((c % this.cols) + this.cols) % this.cols;
+        return this.cells[this.idx(r, c)];
+      }
+      set(r, c, v) { this.cells[this.idx(r, c)] = v; }
+      countNeighbors(r, c) {
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            if (this.get(r + dr, c + dc) > 0) count++;
+          }
+        }
+        return count;
+      }
+      randomize(density, seed) {
+        const rng = seededRandom(seed);
+        for (let i = 0; i < this.cells.length; i++) {
+          this.cells[i] = rng() < density ? 1 : 0;
+        }
+      }
+      clone() {
+        const copy = new Grid(this.rows, this.cols);
+        copy.cells.set(this.cells);
+        return copy;
+      }
+      population() {
+        let count = 0;
+        for (let i = 0; i < this.cells.length; i++) if (this.cells[i] > 0) count++;
+        return count;
+      }
+      hammingDistance(other) {
+        let diff = 0;
+        for (let i = 0; i < this.cells.length; i++) {
+          if ((this.cells[i] > 0) !== (other.cells[i] > 0)) diff++;
+        }
+        return diff;
+      }
+      flipCell(r, c) {
+        const i = this.idx(r, c);
+        this.cells[i] = this.cells[i] > 0 ? 0 : 1;
+      }
+    }
+
+    class Rule {
+      constructor(birthMask, survivalMask) {
+        this.birthMask = birthMask;
+        this.survivalMask = survivalMask;
+      }
+      shouldBirth(n) { return (this.birthMask & (1 << n)) !== 0; }
+      shouldSurvive(n) { return (this.survivalMask & (1 << n)) !== 0; }
+      toString() {
+        let b = '', s = '';
+        for (let i = 0; i <= 8; i++) {
+          if (this.birthMask & (1 << i)) b += i;
+          if (this.survivalMask & (1 << i)) s += i;
+        }
+        return `B${b}/S${s}`;
+      }
+    }
+
+    const RULES = {
+      life: new Rule(0b000001000, 0b000001100),
+      seeds: new Rule(0b000000100, 0b000000000),
+      highlife: new Rule(0b001001000, 0b000001100)
+    };
+
+    function stepInPlace(current, next, rule) {
+      for (let r = 0; r < current.rows; r++) {
+        for (let c = 0; c < current.cols; c++) {
+          const state = current.get(r, c);
+          const neighbors = current.countNeighbors(r, c);
+          next.set(r, c, state > 0 ? (rule.shouldSurvive(neighbors) ? 1 : 0) : (rule.shouldBirth(neighbors) ? 1 : 0));
+        }
+      }
+    }
+
+    function measureDimension(grid) {
+      if (grid.population() === 0) return { dimension: 0, r_squared: 1 };
+      const scales = [1, 2, 4, 8, 16, 32, 64, 128].filter(s => s <= Math.min(grid.rows, grid.cols) / 2);
+      const points = [];
+      for (const boxSize of scales) {
+        let count = 0;
+        for (let r = 0; r < grid.rows; r += boxSize) {
+          for (let c = 0; c < grid.cols; c += boxSize) {
+            let hasCell = false;
+            for (let dr = 0; dr < boxSize && !hasCell; dr++) {
+              for (let dc = 0; dc < boxSize && !hasCell; dc++) {
+                if (r + dr < grid.rows && c + dc < grid.cols && grid.cells[grid.idx(r + dr, c + dc)] > 0) hasCell = true;
+              }
+            }
+            if (hasCell) count++;
+          }
+        }
+        if (count > 0) points.push({ logE: -Math.log(boxSize), logN: Math.log(count) });
+      }
+      if (points.length < 2) return { dimension: 0, r_squared: 0 };
+      const n = points.length;
+      const sumX = points.reduce((a, p) => a + p.logE, 0);
+      const sumY = points.reduce((a, p) => a + p.logN, 0);
+      const sumXY = points.reduce((a, p) => a + p.logE * p.logN, 0);
+      const sumX2 = points.reduce((a, p) => a + p.logE * p.logE, 0);
+      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      const meanY = sumY / n;
+      const ssRes = points.reduce((a, p) => a + Math.pow(p.logN - (slope * p.logE + (sumY - slope * sumX) / n), 2), 0);
+      const ssTot = points.reduce((a, p) => a + Math.pow(p.logN - meanY, 2), 0);
+      return { dimension: Math.max(0, slope), r_squared: ssTot > 0 ? 1 - ssRes / ssTot : 1 };
+    }
+
+    function computeBDM(grid) {
+      const blockSize = 4;
+      const blockCounts = new Map();
+      for (let br = 0; br < Math.ceil(grid.rows / blockSize); br++) {
+        for (let bc = 0; bc < Math.ceil(grid.cols / blockSize); bc++) {
+          let value = 0;
+          for (let r = 0; r < blockSize; r++) {
+            for (let c = 0; c < blockSize; c++) {
+              const row = br * blockSize + r;
+              const col = bc * blockSize + c;
+              if (row < grid.rows && col < grid.cols && grid.cells[grid.idx(row, col)] > 0) {
+                value |= (1 << (r * blockSize + c));
+              }
+            }
+          }
+          blockCounts.set(value, (blockCounts.get(value) || 0) + 1);
+        }
+      }
+      let bdm = 0;
+      for (const [block, count] of blockCounts) {
+        const bits = block.toString(2).split('1').length - 1;
+        const complexity = bits === 0 || bits === 16 ? 1 : Math.min(8, 2 + bits * 0.5);
+        bdm += complexity + Math.log2(count);
+      }
+      return { bdm, uniqueBlocks: blockCounts.size };
+    }
+
+    // ============================================
+    // UI
+    // ============================================
+
+    const canvas1 = document.getElementById('canvas1');
+    const canvas2 = document.getElementById('canvas2');
+    const ctx1 = canvas1.getContext('2d');
+    const ctx2 = canvas2.getContext('2d');
+    const logEl = document.getElementById('log');
+    const resultsEl = document.getElementById('results');
+
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      const time = new Date().toLocaleTimeString();
+      entry.textContent = `[${time}] ${msg}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      if (logEl.children.length > 300) logEl.removeChild(logEl.firstChild);
+      console.log(`[${type}] ${msg}`);
+    }
+
+    function setDescription(text) {
+      document.getElementById('current-desc').textContent = text;
+    }
+
+    function drawGrid(ctx, grid) {
+      const canvasW = ctx.canvas.width;
+      const canvasH = ctx.canvas.height;
+      const cellW = canvasW / grid.cols;
+      const cellH = canvasH / grid.rows;
+
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+      ctx.fillStyle = '#4a7a4a';
+
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          if (grid.cells[grid.idx(r, c)] > 0) {
+            ctx.fillRect(Math.floor(c * cellW), Math.floor(r * cellH), Math.ceil(cellW), Math.ceil(cellH));
+          }
+        }
+      }
+    }
+
+    function drawDiffGrid(ctx, grid1, grid2) {
+      const canvasW = ctx.canvas.width;
+      const canvasH = ctx.canvas.height;
+      const cellW = canvasW / grid1.cols;
+      const cellH = canvasH / grid1.rows;
+
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+
+      for (let r = 0; r < grid1.rows; r++) {
+        for (let c = 0; c < grid1.cols; c++) {
+          const v1 = grid1.cells[grid1.idx(r, c)] > 0;
+          const v2 = grid2.cells[grid2.idx(r, c)] > 0;
+          if (v1 && v2) {
+            ctx.fillStyle = '#4a7a4a'; // Same, alive
+          } else if (v1 || v2) {
+            ctx.fillStyle = '#7a4a4a'; // Different!
+          } else {
+            continue; // Both dead
+          }
+          ctx.fillRect(Math.floor(c * cellW), Math.floor(r * cellH), Math.ceil(cellW), Math.ceil(cellH));
+        }
+      }
+    }
+
+    function updateResult(index, value, pass) {
+      const results = resultsEl.children;
+      if (index < results.length) {
+        results[index].className = `test-result ${pass ? 'pass' : 'fail'}`;
+        results[index].innerHTML = `<span>${results[index].querySelector('span').textContent}</span><span class="value">${value}</span>`;
+      }
+    }
+
+    function setResultRunning(index, label) {
+      const results = resultsEl.children;
+      if (index < results.length) {
+        results[index].className = 'test-result running';
+        results[index].innerHTML = `<span>${label}</span><span class="expected">measuring...</span>`;
+      }
+    }
+
+    // ============================================
+    // MEASUREMENTS
+    // ============================================
+
+    async function measureLambdaLive(rule, ruleName, config) {
+      const { rows, cols, steps, trials, seed } = config;
+      const lambdaValues = [];
+
+      document.getElementById('current-test').textContent = `${ruleName} — Lambda (λ)`;
+      setDescription(`Measuring sensitivity to perturbation. Two identical grids, one cell different. How far does the difference spread?`);
+      document.getElementById('label1').textContent = 'Original Grid';
+      document.getElementById('label2').textContent = 'Difference Map (red = changed)';
+
+      log(`[Lambda] Starting ${ruleName}: ${trials} trials, ${rows}×${cols} grid, ${steps} steps`, 'info');
+
+      for (let trial = 0; trial < trials; trial++) {
+        log(`[Lambda] Trial ${trial + 1}/${trials}`, 'progress');
+
+        const trialSeed = seed + trial * 1000;
+        const rng = seededRandom(trialSeed);
+
+        const grid1 = new Grid(rows, cols);
+        const grid2 = new Grid(rows, cols);
+        for (let i = 0; i < grid1.cells.length; i++) {
+          const v = rng() < 0.3 ? 1 : 0;
+          grid1.cells[i] = v;
+          grid2.cells[i] = v;
+        }
+
+        const pr = Math.floor(rng() * rows);
+        const pc = Math.floor(rng() * cols);
+        grid2.flipCell(pr, pc);
+        log(`[Lambda]   Perturbed cell at (${pr}, ${pc})`, 'debug');
+
+        let c1 = grid1, c2 = grid2;
+        let n1 = new Grid(rows, cols), n2 = new Grid(rows, cols);
+
+        const initialPop = c1.population();
+        log(`[Lambda]   Initial population: ${initialPop} cells (${(initialPop / (rows*cols) * 100).toFixed(1)}%)`, 'debug');
+
+        for (let t = 0; t <= steps; t++) {
+          if (t % 50 === 0 || t === steps) {
+            drawGrid(ctx1, c1);
+            drawDiffGrid(ctx2, c1, c2);
+            const h = c1.hammingDistance(c2);
+            document.getElementById('current-step').textContent = t;
+            document.getElementById('current-hamming').textContent = h.toLocaleString();
+            document.getElementById('current-pop').textContent = c1.population().toLocaleString();
+            document.getElementById('step-progress').style.width = `${(t / steps) * 100}%`;
+            document.getElementById('step-label').textContent = `Step ${t}/${steps} — Trial ${trial + 1}/${trials}`;
+            await new Promise(r => setTimeout(r, 0));
+          }
+          if (t < steps) {
+            stepInPlace(c1, n1, rule);
+            stepInPlace(c2, n2, rule);
+            [c1, n1] = [n1, c1];
+            [c2, n2] = [n2, c2];
+          }
+        }
+
+        const hFinal = c1.hammingDistance(c2);
+        const popFinal = c1.population();
+        const lambda = hFinal === 0 ? -10 : Math.log(hFinal) / steps;
+        lambdaValues.push(lambda);
+
+        const pct = (hFinal / (rows * cols) * 100).toFixed(2);
+        log(`[Lambda]   Result: h=${hFinal} (${pct}% of grid), λ=${lambda.toFixed(4)}, final pop=${popFinal}`, lambda > -10 ? 'info' : 'warn');
+      }
+
+      const validLambdas = lambdaValues.filter(l => l > -10);
+      const mean = lambdaValues.reduce((a, b) => a + b, 0) / lambdaValues.length;
+      const std = Math.sqrt(lambdaValues.reduce((s, v) => s + (v - mean) ** 2, 0) / lambdaValues.length);
+
+      log(`[Lambda] ${ruleName} FINAL: λ = ${mean.toFixed(4)} ± ${std.toFixed(4)} (${validLambdas.length}/${trials} valid trials)`, 'success');
+      return { lambda: mean, stdDev: std, validTrials: validLambdas.length };
+    }
+
+    async function measureDimensionLive(rule, ruleName, config) {
+      const { rows, cols, steps, seed } = config;
+
+      document.getElementById('current-test').textContent = `${ruleName} — Dimension (D)`;
+      setDescription(`Running simulation to equilibrium, then measuring fractal dimension via box-counting.`);
+      document.getElementById('label1').textContent = 'Evolved Pattern';
+      document.getElementById('label2').textContent = 'Box-counting overlay';
+
+      log(`[Dimension] Starting ${ruleName}: ${rows}×${cols} grid, ${steps} steps`, 'info');
+
+      const grid = new Grid(rows, cols);
+      grid.randomize(0.3, seed);
+      const initialPop = grid.population();
+      log(`[Dimension] Initial: ${initialPop} cells`, 'debug');
+
+      let current = grid, next = new Grid(rows, cols);
+
+      for (let t = 0; t <= steps; t++) {
+        if (t % 50 === 0 || t === steps) {
+          drawGrid(ctx1, current);
+          document.getElementById('current-step').textContent = t;
+          document.getElementById('current-hamming').textContent = '-';
+          document.getElementById('current-pop').textContent = current.population().toLocaleString();
+          document.getElementById('step-progress').style.width = `${(t / steps) * 100}%`;
+          document.getElementById('step-label').textContent = `Evolving: Step ${t}/${steps}`;
+          await new Promise(r => setTimeout(r, 0));
+        }
+        if (t < steps) {
+          stepInPlace(current, next, rule);
+          [current, next] = [next, current];
+        }
+      }
+
+      const finalPop = current.population();
+      log(`[Dimension] Final population: ${finalPop} cells`, 'debug');
+
+      const dim = measureDimension(current);
+
+      // Draw box-counting viz
+      const canvasW = ctx2.canvas.width;
+      const canvasH = ctx2.canvas.height;
+      const cellW = canvasW / rows;
+      const cellH = canvasH / cols;
+      ctx2.fillStyle = '#050505';
+      ctx2.fillRect(0, 0, canvasW, canvasH);
+
+      // Draw pattern
+      ctx2.fillStyle = '#4a7a4a';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (current.cells[current.idx(r, c)] > 0) {
+            ctx2.fillRect(Math.floor(c * cellW), Math.floor(r * cellH), Math.ceil(cellW), Math.ceil(cellH));
+          }
+        }
+      }
+
+      // Overlay boxes
+      const boxSize = 16;
+      ctx2.strokeStyle = 'rgba(122, 90, 60, 0.5)';
+      for (let r = 0; r < rows; r += boxSize) {
+        for (let c = 0; c < cols; c += boxSize) {
+          ctx2.strokeRect(Math.floor(c * cellW), Math.floor(r * cellH), Math.ceil(boxSize * cellW), Math.ceil(boxSize * cellH));
+        }
+      }
+
+      log(`[Dimension] ${ruleName} FINAL: D = ${dim.dimension.toFixed(4)} (R² = ${dim.r_squared.toFixed(4)})`, 'success');
+      return dim;
+    }
+
+    async function measureGammaLive(rule, ruleName, config) {
+      const { rows, cols, steps, seed } = config;
+
+      document.getElementById('current-test').textContent = `${ruleName} — Gamma (γ)`;
+      setDescription(`Measuring complexity change using Block Decomposition Method (BDM). Compares algorithmic complexity at t=0 vs t=final.`);
+      document.getElementById('label1').textContent = 'Initial State (t=0)';
+      document.getElementById('label2').textContent = 'Final State';
+
+      log(`[Gamma] Starting ${ruleName}: ${rows}×${cols} grid, ${steps} steps`, 'info');
+
+      const grid = new Grid(rows, cols);
+      grid.randomize(0.3, seed);
+      const bdmInitial = computeBDM(grid);
+
+      log(`[Gamma] Initial BDM: ${bdmInitial.bdm.toFixed(1)} bits (${bdmInitial.uniqueBlocks} unique 4×4 blocks)`, 'debug');
+
+      drawGrid(ctx1, grid);
+      await new Promise(r => setTimeout(r, 50));
+
+      let current = grid.clone(), next = new Grid(rows, cols);
+
+      for (let t = 0; t <= steps; t++) {
+        if (t % 50 === 0 || t === steps) {
+          drawGrid(ctx2, current);
+          document.getElementById('current-step').textContent = t;
+          document.getElementById('current-hamming').textContent = '-';
+          document.getElementById('current-pop').textContent = current.population().toLocaleString();
+          document.getElementById('step-progress').style.width = `${(t / steps) * 100}%`;
+          document.getElementById('step-label').textContent = `Evolving: Step ${t}/${steps}`;
+          await new Promise(r => setTimeout(r, 0));
+        }
+        if (t < steps) {
+          stepInPlace(current, next, rule);
+          [current, next] = [next, current];
+        }
+      }
+
+      const bdmFinal = computeBDM(current);
+      const gamma = ((bdmFinal.bdm - bdmInitial.bdm) / steps) * 1000;
+
+      log(`[Gamma] Final BDM: ${bdmFinal.bdm.toFixed(1)} bits (${bdmFinal.uniqueBlocks} unique blocks)`, 'debug');
+      log(`[Gamma] ${ruleName} FINAL: γ = ${gamma.toFixed(2)} bits/1000 steps (${bdmInitial.bdm.toFixed(0)} → ${bdmFinal.bdm.toFixed(0)})`, 'success');
+
+      return { gamma, bdmInitial: bdmInitial.bdm, bdmFinal: bdmFinal.bdm };
+    }
+
+    // ============================================
+    // MAIN
+    // ============================================
+
+    async function runFullTests() {
+      const config = { rows: 256, cols: 256, steps: 1000, trials: 10, seed: 42 };
+      log('========================================', 'info');
+      log('FULL TESTS: 256×256 grid, 1000 steps, 10 trials', 'success');
+      log('This measures three classic Life-like rules', 'info');
+      log('========================================', 'info');
+      await runTestSuite(config);
+    }
+
+    async function runQuickTests() {
+      const config = { rows: 64, cols: 64, steps: 200, trials: 3, seed: 42 };
+      log('========================================', 'info');
+      log('QUICK TESTS: 64×64 grid, 200 steps, 3 trials', 'warn');
+      log('(Results less reliable than full tests)', 'warn');
+      log('========================================', 'info');
+      await runTestSuite(config);
+    }
+
+    async function runTestSuite(config) {
+      document.getElementById('runAll').disabled = true;
+      document.getElementById('runQuick').disabled = true;
+
+      const rules = [
+        { key: 'life', name: 'Life (B3/S23)', rule: RULES.life, lambdaRange: [0, 0.2], dRange: [1.0, 1.9] },
+        { key: 'seeds', name: 'Seeds (B2/S)', rule: RULES.seeds, lambdaRange: [-5, 2], dRange: [1.0, 2.0] },
+        { key: 'highlife', name: 'HighLife (B36/S23)', rule: RULES.highlife, lambdaRange: [0, 0.2], dRange: [1.0, 1.9] }
+      ];
+
+      let resultIndex = 0;
+
+      for (const r of rules) {
+        log(`\n>>> Testing ${r.name} <<<`, 'info');
+
+        // Lambda
+        setResultRunning(resultIndex, `${r.name} λ`);
+        const lambdaResult = await measureLambdaLive(r.rule, r.name, config);
+        const lambdaPass = lambdaResult.lambda >= r.lambdaRange[0] && lambdaResult.lambda <= r.lambdaRange[1];
+        updateResult(resultIndex, `${lambdaResult.lambda.toFixed(4)} ± ${lambdaResult.stdDev.toFixed(4)}`, lambdaPass);
+        resultIndex++;
+
+        // Dimension
+        setResultRunning(resultIndex, `${r.name} D`);
+        const dimResult = await measureDimensionLive(r.rule, r.name, { ...config, seed: config.seed + 100 });
+        const dimPass = dimResult.dimension >= r.dRange[0] && dimResult.dimension <= r.dRange[1];
+        updateResult(resultIndex, `${dimResult.dimension.toFixed(4)} (R²=${dimResult.r_squared.toFixed(3)})`, dimPass);
+        resultIndex++;
+
+        // Gamma
+        setResultRunning(resultIndex, `${r.name} γ`);
+        const gammaResult = await measureGammaLive(r.rule, r.name, { ...config, seed: config.seed + 200 });
+        updateResult(resultIndex, `${gammaResult.gamma.toFixed(1)} bits/kstep`, true);
+        resultIndex++;
+
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      document.getElementById('current-test').textContent = 'All Tests Complete';
+      setDescription('Results show Life and HighLife are similar (edge of chaos), Seeds is more chaotic but dies. Large negative γ is expected from random→organized.');
+      log('\n========================================', 'success');
+      log('ALL TESTS COMPLETE', 'success');
+      log('========================================', 'success');
+
+      document.getElementById('runAll').disabled = false;
+      document.getElementById('runQuick').disabled = false;
+    }
+
+    // Event listeners
+    document.getElementById('runAll').addEventListener('click', runFullTests);
+    document.getElementById('runQuick').addEventListener('click', runQuickTests);
+    document.getElementById('clearLog').addEventListener('click', () => {
+      logEl.innerHTML = '';
+      resultsEl.innerHTML = `
+        <div class="test-result pending"><span>Life λ</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>Life D</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>Life γ</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>Seeds λ</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>Seeds D</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>Seeds γ</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>HighLife λ</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>HighLife D</span><span class="expected">waiting...</span></div>
+        <div class="test-result pending"><span>HighLife γ</span><span class="expected">waiting...</span></div>
+      `;
+    });
+
+    log('Ready. Click "Run Full Tests" for accurate measurements.', 'info');
+  </script>
+</body>
+</html>

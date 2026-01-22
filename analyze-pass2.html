@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Survey - Pass 2 Deep Analysis</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #a0a0a0;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { color: #4a7a4a; font-size: 1.2rem; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+    .subtitle { color: #555; font-size: 0.8rem; margin-bottom: 2rem; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .row { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 400px; }
+    .col-narrow { flex: 0 0 350px; }
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .panel-title {
+      color: #666;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      padding: 0.6rem 1.2rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 3px;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button:hover { background: #222; color: #aaa; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: #1a2a1a; border-color: #2a4a2a; color: #6a9a6a; }
+    button.danger { background: #2a1a1a; border-color: #4a2a2a; color: #9a6a6a; }
+
+    .progress-bar {
+      height: 20px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+      margin: 1rem 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2a4a2a, #3a6a3a);
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.7rem;
+      color: #888;
+    }
+
+    .filter-panel { background: #0d0d0d; padding: 1rem; border-radius: 3px; margin-bottom: 1rem; }
+    .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; }
+    .filter-item { display: flex; align-items: center; gap: 0.5rem; }
+    .filter-item label { font-size: 0.7rem; color: #555; }
+    .filter-item input {
+      background: #111; border: 1px solid #222; color: #888;
+      padding: 0.3rem 0.5rem; width: 80px; font-family: inherit; font-size: 0.75rem;
+    }
+    .filter-count { font-size: 0.8rem; color: #6a9a6a; }
+
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+    .results-table th {
+      text-align: left; padding: 0.4rem; border-bottom: 1px solid #333;
+      color: #555; font-weight: normal; font-size: 0.6rem; cursor: pointer;
+    }
+    .results-table th:hover { color: #888; }
+    .results-table td { padding: 0.4rem; border-bottom: 1px solid #1a1a1a; }
+    .results-table tr:hover { background: #151515; cursor: pointer; }
+    .results-scroll { max-height: 400px; overflow-y: auto; }
+
+    .preview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .preview-item { text-align: center; }
+    .preview-item canvas { border: 1px solid #222; background: #050505; }
+    .preview-label { font-size: 0.65rem; color: #555; margin-top: 0.3rem; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.7rem; }
+    .metric-item { background: #0d0d0d; padding: 0.5rem; border-radius: 2px; }
+    .metric-label { color: #555; font-size: 0.6rem; }
+    .metric-value { color: #6a9a6a; }
+
+    .gamma-chart { height: 100px; background: #0d0d0d; border-radius: 3px; position: relative; }
+    .pop-chart { height: 80px; background: #0d0d0d; border-radius: 3px; position: relative; }
+
+    .log {
+      background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 3px;
+      padding: 0.75rem; max-height: 120px; overflow-y: auto; font-size: 0.7rem;
+    }
+    .log-entry { margin: 0.1rem 0; color: #555; }
+    .log-entry.success { color: #5a8a5a; }
+    .log-entry.error { color: #8a5a5a; }
+    .log-entry.info { color: #5a7a8a; }
+
+    .thumbnail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      gap: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .thumbnail {
+      width: 36px; height: 36px;
+      border: 1px solid #222;
+      cursor: pointer;
+      image-rendering: pixelated;
+    }
+    .thumbnail:hover { border-color: #4a7a4a; }
+    .thumbnail.selected { border-color: #6a9a6a; border-width: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PASS 2 - DEEP ANALYSIS</h1>
+    <p class="subtitle">Detailed metrics for interesting rules: 10-trial λ, γ trajectory, spatial autocorrelation, thumbnails</p>
+
+    <div class="row">
+      <div class="col">
+        <div class="panel">
+          <div class="panel-title">Load Pass 1 Data</div>
+          <input type="file" id="file-input" accept=".csv" style="margin-bottom: 1rem;">
+          <button id="btn-load-localstorage" class="primary">Load from localStorage</button>
+          <div id="load-status" style="margin-top: 0.5rem; font-size: 0.75rem; color: #555;"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Filter Criteria (for Pass 2)</div>
+          <div class="filter-panel">
+            <div class="filter-row">
+              <div class="filter-item">
+                <label>Class:</label>
+                <select id="filter-class">
+                  <option value="aperiodic" selected>Aperiodic only</option>
+                  <option value="all">All classes</option>
+                </select>
+              </div>
+              <div class="filter-item">
+                <label>λ max:</label>
+                <input type="number" id="filter-lambda-max" value="0.03" step="0.01">
+              </div>
+              <div class="filter-item">
+                <label>D max:</label>
+                <input type="number" id="filter-d-max" value="1.8" step="0.1">
+              </div>
+              <div class="filter-item">
+                <label>Min survive:</label>
+                <input type="number" id="filter-min-survive" value="200" step="50">
+              </div>
+            </div>
+            <div class="filter-row">
+              <button id="btn-apply-filter">Apply Filter</button>
+              <span class="filter-count" id="filter-count">0 rules match</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Filtered Rules</div>
+          <div class="results-scroll">
+            <table class="results-table">
+              <thead><tr>
+                <th data-sort="rule_id">ID</th>
+                <th data-sort="rule_string">Rule</th>
+                <th data-sort="lambda">λ</th>
+                <th data-sort="D">D</th>
+                <th data-sort="gamma">γ</th>
+                <th data-sort="cluster_count">Clust</th>
+                <th data-sort="edge_ratio">Edge</th>
+              </tr></thead>
+              <tbody id="results-body"><tr><td colspan="7" style="text-align:center;color:#444">Load data first</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Pass 2 Analysis</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            <div class="progress-text" id="progress-text">0 / 0</div>
+          </div>
+          <button id="btn-run-pass2" class="primary" disabled>Run Pass 2 on Filtered Rules</button>
+          <button id="btn-pause" disabled>Pause</button>
+          <button id="btn-download-pass2" disabled>Download Pass 2 CSV</button>
+        </div>
+      </div>
+
+      <div class="col-narrow">
+        <div class="panel">
+          <div class="panel-title">Selected Rule Details</div>
+          <div id="selected-rule-name" style="font-size: 1rem; color: #7a9a7a; margin-bottom: 1rem;">--</div>
+
+          <div class="preview-grid">
+            <div class="preview-item">
+              <canvas id="preview-t100" width="64" height="64"></canvas>
+              <div class="preview-label">t=100</div>
+            </div>
+            <div class="preview-item">
+              <canvas id="preview-t500" width="64" height="64"></canvas>
+              <div class="preview-label">t=500</div>
+            </div>
+            <div class="preview-item">
+              <canvas id="preview-t1000" width="64" height="64"></canvas>
+              <div class="preview-label">t=1000</div>
+            </div>
+            <div class="preview-item">
+              <canvas id="preview-final" width="64" height="64"></canvas>
+              <div class="preview-label">Final</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <div class="panel-title">Pass 1 Metrics</div>
+            <div class="metric-grid" id="pass1-metrics">
+              <div class="metric-item"><div class="metric-label">λ</div><div class="metric-value">--</div></div>
+              <div class="metric-item"><div class="metric-label">D</div><div class="metric-value">--</div></div>
+              <div class="metric-item"><div class="metric-label">γ</div><div class="metric-value">--</div></div>
+              <div class="metric-item"><div class="metric-label">Clusters</div><div class="metric-value">--</div></div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <div class="panel-title">Pass 2 Metrics (if available)</div>
+            <div class="metric-grid" id="pass2-metrics">
+              <div class="metric-item"><div class="metric-label">λ (10 trial)</div><div class="metric-value">--</div></div>
+              <div class="metric-item"><div class="metric-label">Autocorr</div><div class="metric-value">--</div></div>
+              <div class="metric-item"><div class="metric-label">Symmetry H</div><div class="metric-value">--</div></div>
+              <div class="metric-item"><div class="metric-label">Symmetry V</div><div class="metric-value">--</div></div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <div class="panel-title">γ Trajectory</div>
+            <canvas id="gamma-chart" class="gamma-chart" width="300" height="100"></canvas>
+          </div>
+
+          <div style="margin-top: 1rem;">
+            <div class="panel-title">Population Trajectory</div>
+            <canvas id="pop-chart" class="pop-chart" width="300" height="80"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Log</div>
+          <div class="log" id="log"><div class="log-entry">Pass 2 analyzer ready.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // CA ENGINE (same as survey)
+    // ============================================
+
+    function seededRandom(seed) {
+      return function() {
+        seed |= 0;
+        seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    class Grid {
+      constructor(rows, cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.cells = new Uint8Array(rows * cols);
+      }
+      idx(r, c) { return r * this.cols + c; }
+      get(r, c) {
+        r = ((r % this.rows) + this.rows) % this.rows;
+        c = ((c % this.cols) + this.cols) % this.cols;
+        return this.cells[this.idx(r, c)];
+      }
+      set(r, c, v) { this.cells[this.idx(r, c)] = v; }
+      countNeighbors(r, c) {
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            if (this.get(r + dr, c + dc) > 0) count++;
+          }
+        }
+        return count;
+      }
+      randomize(density, seed) {
+        const rng = seededRandom(seed);
+        for (let i = 0; i < this.cells.length; i++) {
+          this.cells[i] = rng() < density ? 1 : 0;
+        }
+      }
+      clone() {
+        const copy = new Grid(this.rows, this.cols);
+        copy.cells.set(this.cells);
+        return copy;
+      }
+      population() {
+        let count = 0;
+        for (let i = 0; i < this.cells.length; i++) if (this.cells[i] > 0) count++;
+        return count;
+      }
+      hammingDistance(other) {
+        let diff = 0;
+        for (let i = 0; i < this.cells.length; i++) {
+          if ((this.cells[i] > 0) !== (other.cells[i] > 0)) diff++;
+        }
+        return diff;
+      }
+      flipCell(r, c) {
+        const i = this.idx(r, c);
+        this.cells[i] = this.cells[i] > 0 ? 0 : 1;
+      }
+      // Downsample to thumbnail
+      toThumbnail(size) {
+        const thumb = new Grid(size, size);
+        const scaleR = this.rows / size;
+        const scaleC = this.cols / size;
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            let sum = 0;
+            const r0 = Math.floor(r * scaleR);
+            const r1 = Math.floor((r + 1) * scaleR);
+            const c0 = Math.floor(c * scaleC);
+            const c1 = Math.floor((c + 1) * scaleC);
+            for (let rr = r0; rr < r1; rr++) {
+              for (let cc = c0; cc < c1; cc++) {
+                if (this.cells[this.idx(rr, cc)] > 0) sum++;
+              }
+            }
+            thumb.cells[thumb.idx(r, c)] = sum > (r1 - r0) * (c1 - c0) / 2 ? 1 : 0;
+          }
+        }
+        return thumb;
+      }
+    }
+
+    class Rule {
+      constructor(birthMask, survivalMask) {
+        this.birthMask = birthMask;
+        this.survivalMask = survivalMask;
+      }
+      shouldBirth(n) { return (this.birthMask & (1 << n)) !== 0; }
+      shouldSurvive(n) { return (this.survivalMask & (1 << n)) !== 0; }
+      toString() {
+        let b = '', s = '';
+        for (let i = 0; i <= 8; i++) {
+          if (this.birthMask & (1 << i)) b += i;
+          if (this.survivalMask & (1 << i)) s += i;
+        }
+        return `B${b}/S${s}`;
+      }
+      static fromId(id) {
+        return new Rule(Math.floor(id / 512), id % 512);
+      }
+    }
+
+    function stepInPlace(current, next, rule) {
+      for (let r = 0; r < current.rows; r++) {
+        for (let c = 0; c < current.cols; c++) {
+          const state = current.get(r, c);
+          const neighbors = current.countNeighbors(r, c);
+          next.set(r, c, state > 0 ? (rule.shouldSurvive(neighbors) ? 1 : 0) : (rule.shouldBirth(neighbors) ? 1 : 0));
+        }
+      }
+    }
+
+    // ============================================
+    // PASS 2 MEASUREMENT FUNCTIONS
+    // ============================================
+
+    function computeBDM(grid) {
+      const blockSize = 4;
+      const blockCounts = new Map();
+      const blockRows = Math.ceil(grid.rows / blockSize);
+      const blockCols = Math.ceil(grid.cols / blockSize);
+      for (let br = 0; br < blockRows; br++) {
+        for (let bc = 0; bc < blockCols; bc++) {
+          let value = 0;
+          for (let r = 0; r < blockSize; r++) {
+            for (let c = 0; c < blockSize; c++) {
+              const row = br * blockSize + r;
+              const col = bc * blockSize + c;
+              if (row < grid.rows && col < grid.cols && grid.cells[grid.idx(row, col)] > 0) {
+                value |= (1 << (r * blockSize + c));
+              }
+            }
+          }
+          blockCounts.set(value, (blockCounts.get(value) || 0) + 1);
+        }
+      }
+      let bdm = 0;
+      for (const [block, count] of blockCounts) {
+        const bits = block.toString(2).split('1').length - 1;
+        const complexity = bits === 0 || bits === 16 ? 1 : Math.min(8, 2 + bits * 0.5);
+        bdm += complexity + Math.log2(count);
+      }
+      return bdm;
+    }
+
+    function measureSpatialAutocorr(grid) {
+      // Measure correlation between cells at distance 1
+      let sum = 0;
+      let count = 0;
+      const mean = grid.population() / (grid.rows * grid.cols);
+
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          const v1 = grid.cells[grid.idx(r, c)] > 0 ? 1 : 0;
+          // Check right and down neighbors only (to avoid double counting)
+          const v2r = grid.get(r, c + 1) > 0 ? 1 : 0;
+          const v2d = grid.get(r + 1, c) > 0 ? 1 : 0;
+          sum += (v1 - mean) * (v2r - mean);
+          sum += (v1 - mean) * (v2d - mean);
+          count += 2;
+        }
+      }
+
+      const variance = mean * (1 - mean);
+      return variance > 0 ? sum / (count * variance) : 0;
+    }
+
+    function measureSymmetry(grid) {
+      let matchH = 0, matchV = 0, total = 0;
+
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols / 2; c++) {
+          const v1 = grid.cells[grid.idx(r, c)] > 0;
+          const v2 = grid.cells[grid.idx(r, grid.cols - 1 - c)] > 0;
+          if (v1 === v2) matchH++;
+          total++;
+        }
+      }
+
+      let totalV = 0;
+      for (let r = 0; r < grid.rows / 2; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          const v1 = grid.cells[grid.idx(r, c)] > 0;
+          const v2 = grid.cells[grid.idx(grid.rows - 1 - r, c)] > 0;
+          if (v1 === v2) matchV++;
+          totalV++;
+        }
+      }
+
+      return {
+        horizontal: total > 0 ? matchH / total : 0,
+        vertical: totalV > 0 ? matchV / totalV : 0
+      };
+    }
+
+    function measureLambda10(rule, gridSize, steps, baseSeed) {
+      const lambdas = [];
+      for (let trial = 0; trial < 10; trial++) {
+        const seed = baseSeed + trial * 1000000;
+        const rng = seededRandom(seed);
+        const grid1 = new Grid(gridSize, gridSize);
+        const grid2 = new Grid(gridSize, gridSize);
+        for (let i = 0; i < grid1.cells.length; i++) {
+          const v = rng() < 0.3 ? 1 : 0;
+          grid1.cells[i] = v;
+          grid2.cells[i] = v;
+        }
+        grid2.flipCell(Math.floor(rng() * gridSize), Math.floor(rng() * gridSize));
+
+        let c1 = grid1, c2 = grid2;
+        let n1 = new Grid(gridSize, gridSize), n2 = new Grid(gridSize, gridSize);
+        for (let t = 0; t < steps; t++) {
+          stepInPlace(c1, n1, rule);
+          stepInPlace(c2, n2, rule);
+          [c1, n1] = [n1, c1];
+          [c2, n2] = [n2, c2];
+        }
+        const hFinal = c1.hammingDistance(c2);
+        lambdas.push(hFinal === 0 ? -10 : Math.log(hFinal) / steps);
+      }
+
+      const valid = lambdas.filter(l => l > -10);
+      if (valid.length === 0) return { mean: -10, std: 0 };
+      const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
+      const std = Math.sqrt(valid.reduce((s, l) => s + (l - mean) ** 2, 0) / valid.length);
+      return { mean, std };
+    }
+
+    function runDeepAnalysis(ruleId, gridSize = 128, maxSteps = 2000) {
+      const rule = Rule.fromId(ruleId);
+      const seed = ruleId * 7919;
+
+      const grid = new Grid(gridSize, gridSize);
+      grid.randomize(0.3, seed);
+
+      let current = grid.clone();
+      let next = new Grid(gridSize, gridSize);
+
+      const snapshots = {};
+      const gammaTrajectory = [];
+      const popTrajectory = [];
+      const checkpoints = [100, 200, 500, 1000, 1500, 2000];
+
+      let bdmPrev = computeBDM(current);
+
+      for (let t = 0; t <= maxSteps; t++) {
+        if (checkpoints.includes(t)) {
+          snapshots[`t${t}`] = current.toThumbnail(32);
+          const bdmNow = computeBDM(current);
+          gammaTrajectory.push({ t, gamma: t > 0 ? ((bdmNow - bdmPrev) / 100) * 1000 : 0 });
+          bdmPrev = bdmNow;
+        }
+
+        if (t % 50 === 0) {
+          popTrajectory.push({ t, pop: current.population() });
+        }
+
+        if (current.population() === 0) break;
+
+        stepInPlace(current, next, rule);
+        [current, next] = [next, current];
+      }
+
+      snapshots.final = current.toThumbnail(32);
+
+      // Deep metrics
+      const lambda10 = measureLambda10(rule, gridSize, 300, seed + 500000);
+      const autocorr = measureSpatialAutocorr(current);
+      const symmetry = measureSymmetry(current);
+
+      return {
+        rule_id: ruleId,
+        rule_string: rule.toString(),
+        lambda_10: lambda10.mean,
+        lambda_10_std: lambda10.std,
+        spatial_autocorr: autocorr,
+        symmetry_h: symmetry.horizontal,
+        symmetry_v: symmetry.vertical,
+        gamma_trajectory: gammaTrajectory,
+        pop_trajectory: popTrajectory,
+        snapshots
+      };
+    }
+
+    // ============================================
+    // UI STATE
+    // ============================================
+
+    let pass1Data = [];
+    let filteredData = [];
+    let pass2Results = new Map();
+    let selectedRule = null;
+    let isRunning = false;
+    let isPaused = false;
+
+    const logEl = document.getElementById('log');
+    const resultsBody = document.getElementById('results-body');
+
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].match(/(".*?"|[^,]+)/g) || [];
+        const row = {};
+        headers.forEach((h, j) => {
+          let v = values[j] || '';
+          v = v.replace(/^"|"$/g, '');
+          row[h] = isNaN(v) || v === '' ? v : parseFloat(v);
+        });
+        data.push(row);
+      }
+      return data;
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const data = JSON.parse(localStorage.getItem('cells_survey_v3'));
+        if (data && data.results) {
+          pass1Data = data.results;
+          log(`Loaded ${pass1Data.length} rules from localStorage`, 'success');
+          document.getElementById('load-status').textContent = `Loaded ${pass1Data.length} rules`;
+          applyFilter();
+        } else {
+          log('No v2 survey data in localStorage', 'error');
+        }
+      } catch (e) {
+        log('Failed to load from localStorage: ' + e.message, 'error');
+      }
+    }
+
+    function applyFilter() {
+      const classFilter = document.getElementById('filter-class').value;
+      const lambdaMax = parseFloat(document.getElementById('filter-lambda-max').value);
+      const dMax = parseFloat(document.getElementById('filter-d-max').value);
+      const minSurvive = parseInt(document.getElementById('filter-min-survive').value);
+
+      filteredData = pass1Data.filter(r => {
+        if (classFilter === 'aperiodic' && r.classification !== 'aperiodic') return false;
+        if (r.lambda > lambdaMax && r.lambda > -10) return false;
+        if (r.D > dMax) return false;
+        if (r.time_to_settle < minSurvive) return false;
+        return true;
+      });
+
+      document.getElementById('filter-count').textContent = `${filteredData.length} rules match`;
+      document.getElementById('btn-run-pass2').disabled = filteredData.length === 0;
+
+      renderFilteredTable();
+      log(`Filter applied: ${filteredData.length} rules`, 'info');
+    }
+
+    function renderFilteredTable() {
+      if (filteredData.length === 0) {
+        resultsBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#444">No matching rules</td></tr>';
+        return;
+      }
+
+      resultsBody.innerHTML = filteredData.slice(0, 200).map(r => `
+        <tr data-rule-id="${r.rule_id}">
+          <td>${r.rule_id}</td>
+          <td>${r.rule_string}</td>
+          <td>${r.lambda > -10 ? r.lambda.toFixed(4) : 'heal'}</td>
+          <td>${r.D.toFixed(3)}</td>
+          <td>${r.gamma.toFixed(0)}</td>
+          <td>${r.cluster_count || '--'}</td>
+          <td>${r.edge_ratio ? r.edge_ratio.toFixed(2) : '--'}</td>
+        </tr>
+      `).join('');
+
+      // Add click handlers
+      resultsBody.querySelectorAll('tr').forEach(row => {
+        row.addEventListener('click', () => {
+          const ruleId = parseInt(row.dataset.ruleId);
+          selectRule(ruleId);
+        });
+      });
+    }
+
+    function selectRule(ruleId) {
+      selectedRule = pass1Data.find(r => r.rule_id === ruleId);
+      if (!selectedRule) return;
+
+      document.getElementById('selected-rule-name').textContent = selectedRule.rule_string;
+
+      // Update Pass 1 metrics
+      const p1 = document.getElementById('pass1-metrics');
+      p1.innerHTML = `
+        <div class="metric-item"><div class="metric-label">λ</div><div class="metric-value">${selectedRule.lambda > -10 ? selectedRule.lambda.toFixed(4) : 'healed'}</div></div>
+        <div class="metric-item"><div class="metric-label">D</div><div class="metric-value">${selectedRule.D.toFixed(4)}</div></div>
+        <div class="metric-item"><div class="metric-label">γ</div><div class="metric-value">${selectedRule.gamma.toFixed(2)}</div></div>
+        <div class="metric-item"><div class="metric-label">Clusters</div><div class="metric-value">${selectedRule.cluster_count || '--'}</div></div>
+      `;
+
+      // Check for Pass 2 data
+      if (pass2Results.has(ruleId)) {
+        const p2 = pass2Results.get(ruleId);
+        updatePass2Display(p2);
+      } else {
+        // Run quick analysis for preview
+        log(`Running preview analysis for ${selectedRule.rule_string}...`, 'info');
+        setTimeout(() => {
+          const result = runDeepAnalysis(ruleId, 128, 1000);
+          pass2Results.set(ruleId, result);
+          updatePass2Display(result);
+          log(`Preview complete for ${selectedRule.rule_string}`, 'success');
+        }, 10);
+      }
+    }
+
+    function updatePass2Display(p2) {
+      // Update Pass 2 metrics
+      const p2El = document.getElementById('pass2-metrics');
+      p2El.innerHTML = `
+        <div class="metric-item"><div class="metric-label">λ (10 trial)</div><div class="metric-value">${p2.lambda_10 > -10 ? p2.lambda_10.toFixed(4) : 'healed'}</div></div>
+        <div class="metric-item"><div class="metric-label">Autocorr</div><div class="metric-value">${p2.spatial_autocorr.toFixed(4)}</div></div>
+        <div class="metric-item"><div class="metric-label">Symmetry H</div><div class="metric-value">${(p2.symmetry_h * 100).toFixed(1)}%</div></div>
+        <div class="metric-item"><div class="metric-label">Symmetry V</div><div class="metric-value">${(p2.symmetry_v * 100).toFixed(1)}%</div></div>
+      `;
+
+      // Draw snapshots
+      drawThumbnail('preview-t100', p2.snapshots.t100);
+      drawThumbnail('preview-t500', p2.snapshots.t500);
+      drawThumbnail('preview-t1000', p2.snapshots.t1000);
+      drawThumbnail('preview-final', p2.snapshots.final);
+
+      // Draw gamma chart
+      drawGammaChart(p2.gamma_trajectory);
+
+      // Draw population chart
+      drawPopChart(p2.pop_trajectory);
+    }
+
+    function drawThumbnail(canvasId, grid) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, 64, 64);
+
+      if (!grid) return;
+
+      const cellSize = 64 / grid.rows;
+      ctx.fillStyle = '#4a7a4a';
+      for (let r = 0; r < grid.rows; r++) {
+        for (let c = 0; c < grid.cols; c++) {
+          if (grid.cells[grid.idx(r, c)] > 0) {
+            ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    }
+
+    function drawGammaChart(trajectory) {
+      const canvas = document.getElementById('gamma-chart');
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillRect(0, 0, 300, 100);
+
+      if (!trajectory || trajectory.length < 2) return;
+
+      const minG = Math.min(...trajectory.map(p => p.gamma));
+      const maxG = Math.max(...trajectory.map(p => p.gamma));
+      const range = maxG - minG || 1;
+
+      ctx.strokeStyle = '#4a7a4a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      trajectory.forEach((p, i) => {
+        const x = (i / (trajectory.length - 1)) * 290 + 5;
+        const y = 95 - ((p.gamma - minG) / range) * 90;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Zero line
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      const zeroY = 95 - ((0 - minG) / range) * 90;
+      ctx.beginPath();
+      ctx.moveTo(5, zeroY);
+      ctx.lineTo(295, zeroY);
+      ctx.stroke();
+    }
+
+    function drawPopChart(trajectory) {
+      const canvas = document.getElementById('pop-chart');
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillRect(0, 0, 300, 80);
+
+      if (!trajectory || trajectory.length < 2) return;
+
+      const maxPop = Math.max(...trajectory.map(p => p.pop));
+
+      ctx.strokeStyle = '#7a7a4a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      trajectory.forEach((p, i) => {
+        const x = (i / (trajectory.length - 1)) * 290 + 5;
+        const y = 75 - (p.pop / maxPop) * 70;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    async function runPass2() {
+      isRunning = true;
+      isPaused = false;
+      document.getElementById('btn-run-pass2').disabled = true;
+      document.getElementById('btn-pause').disabled = false;
+
+      const total = filteredData.length;
+      let completed = 0;
+
+      for (const rule of filteredData) {
+        if (!isRunning || isPaused) break;
+        if (pass2Results.has(rule.rule_id)) {
+          completed++;
+          continue;
+        }
+
+        const result = runDeepAnalysis(rule.rule_id, 128, 2000);
+        pass2Results.set(rule.rule_id, result);
+        completed++;
+
+        document.getElementById('progress-fill').style.width = `${(completed / total) * 100}%`;
+        document.getElementById('progress-text').textContent = `${completed} / ${total}`;
+
+        if (completed % 10 === 0) {
+          log(`Pass 2: ${completed}/${total} complete`, 'info');
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+
+      isRunning = false;
+      document.getElementById('btn-run-pass2').disabled = false;
+      document.getElementById('btn-pause').disabled = true;
+      document.getElementById('btn-download-pass2').disabled = pass2Results.size === 0;
+      log(`Pass 2 complete: ${pass2Results.size} rules analyzed`, 'success');
+    }
+
+    function exportPass2CSV() {
+      const headers = [
+        'rule_id', 'rule_string', 'lambda_10', 'lambda_10_std',
+        'spatial_autocorr', 'symmetry_h', 'symmetry_v',
+        'gamma_t100', 'gamma_t200', 'gamma_t500', 'gamma_t1000'
+      ];
+      const rows = [headers.join(',')];
+
+      for (const [ruleId, r] of pass2Results) {
+        const gammas = {};
+        r.gamma_trajectory.forEach(g => gammas[`t${g.t}`] = g.gamma);
+        rows.push([
+          r.rule_id, `"${r.rule_string}"`, r.lambda_10.toFixed(6), r.lambda_10_std.toFixed(6),
+          r.spatial_autocorr.toFixed(6), r.symmetry_h.toFixed(4), r.symmetry_v.toFixed(4),
+          (gammas.t100 || 0).toFixed(2), (gammas.t200 || 0).toFixed(2),
+          (gammas.t500 || 0).toFixed(2), (gammas.t1000 || 0).toFixed(2)
+        ].join(','));
+      }
+      return rows.join('\n');
+    }
+
+    // Event handlers
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        pass1Data = parseCSV(ev.target.result);
+        log(`Loaded ${pass1Data.length} rules from CSV`, 'success');
+        document.getElementById('load-status').textContent = `Loaded ${pass1Data.length} rules from ${file.name}`;
+        applyFilter();
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('btn-load-localstorage').addEventListener('click', loadFromLocalStorage);
+    document.getElementById('btn-apply-filter').addEventListener('click', applyFilter);
+    document.getElementById('btn-run-pass2').addEventListener('click', runPass2);
+    document.getElementById('btn-pause').addEventListener('click', () => { isPaused = true; });
+    document.getElementById('btn-download-pass2').addEventListener('click', () => {
+      const csv = exportPass2CSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lifelike-pass2-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    });
+
+    // Table sorting
+    document.querySelectorAll('.results-table th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        filteredData.sort((a, b) => (a[key] > b[key] ? 1 : -1));
+        renderFilteredTable();
+      });
+    });
+  </script>
+</body>
+</html>
