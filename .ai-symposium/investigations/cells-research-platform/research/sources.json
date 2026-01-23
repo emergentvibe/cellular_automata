@@ -1,0 +1,81 @@
+[
+  {
+    "id": "S1",
+    "type": "arxiv",
+    "title": "CAX: Cellular Automata Accelerated in JAX",
+    "authors": ["Imperial College London team"],
+    "year": 2024,
+    "url": "https://arxiv.org/abs/2410.02651",
+    "key_finding": "Modular architecture supporting discrete/continuous CA in any dimensions, 2000x faster via JAX hardware acceleration, custom rules in 'just a few lines of code'",
+    "relevance": "Reference for extensible CA platform architecture"
+  },
+  {
+    "id": "S2",
+    "type": "paper",
+    "title": "Detecting emergent processes in cellular automata with excess information",
+    "authors": ["David Balduzzi"],
+    "year": 2011,
+    "url": "https://arxiv.org/abs/1105.0158",
+    "key_finding": "Formalized emergence as 'better expressed at coarser granularity'. Tools for flexible coarse-graining to identify emergent processes.",
+    "relevance": "Mathematical framework for detecting 'patterns on patterns' (emergence hierarchies)"
+  },
+  {
+    "id": "S3",
+    "type": "thesis",
+    "title": "On the effect of topology on cellular automata rule spaces",
+    "authors": ["David Warne"],
+    "year": 2013,
+    "url": "https://eprints.qut.edu.au/76202/",
+    "key_finding": "Topology (genus-0/1/2 manifolds) significantly alters rule space distributions. Both global structure AND local dynamics define long-term behavior.",
+    "relevance": "Validates topology as a fundamental research dimension (not just a feature)"
+  },
+  {
+    "id": "S4",
+    "type": "paper",
+    "title": "Emergence of Self-Replicating Hierarchical Structures in a Binary Cellular Automaton",
+    "authors": ["MIT Press Artificial Life"],
+    "year": 2025,
+    "url": "https://direct.mit.edu/artl/article/31/1/96/124149/Emergence-of-Self-Replicating-Hierarchical",
+    "key_finding": "Self-replicating structures across TWO spatial/temporal scales. Lower-level clusters generate new clusters, which coalesce into larger formations that also self-replicate.",
+    "relevance": "Evidence of multi-level emergence (patterns on patterns on patterns)"
+  },
+  {
+    "id": "S5",
+    "type": "book",
+    "title": "A New Kind of Science",
+    "authors": ["Stephen Wolfram"],
+    "year": 2002,
+    "url": "https://www.wolframscience.com/nks/",
+    "key_finding": "Systematic exploration of simple programs. Computational irreducibility means you must run the simulation (no shortcuts). Simplicity of rules doesn't predict complexity of behavior.",
+    "relevance": "Foundational work on systematic CA exploration and computational irreducibility"
+  },
+  {
+    "id": "S6",
+    "type": "web",
+    "title": "Wolfram MathWorld - Computational Irreducibility",
+    "year": 2025,
+    "url": "https://mathworld.wolfram.com/ComputationalIrreducibility.html",
+    "key_finding": "Principle: Only way to determine answer is to perform the computation. No shortcuts. Related to unpredictability and free will.",
+    "relevance": "Why surveys must actually run rules, not predict them"
+  },
+  {
+    "id": "S7",
+    "type": "paper",
+    "title": "Hierarchical Cellular Automata Methods",
+    "authors": ["SpringerLink"],
+    "year": null,
+    "url": "https://link.springer.com/chapter/10.1007/978-3-642-12203-3_4",
+    "key_finding": "Multiscale/multiresolution CA systems. Abstraction operator transforms CA into hierarchy of cellular spaces.",
+    "relevance": "Architecture for layered analysis (abstraction hierarchies)"
+  },
+  {
+    "id": "S8",
+    "type": "article",
+    "title": "What Can We Learn about Engineering from Half a Century of Game of Life",
+    "authors": ["Stephen Wolfram"],
+    "year": 2025,
+    "url": "https://writings.stephenwolfram.com/2025/03/what-can-we-learn-about-engineering-and-innovation-from-half-a-century-of-the-game-of-life-cellular-automaton/",
+    "key_finding": "Computational irreducibility makes engineering in Game of Life possible. Richness comes from irreducibility.",
+    "relevance": "Research goal: understand what makes certain rule spaces rich for engineering/emergence"
+  }
+]

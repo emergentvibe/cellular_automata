@@ -1,0 +1,79 @@
+{
+  "sources": [
+    {
+      "id": "S1",
+      "type": "software",
+      "title": "Golly - Game of Life Simulator",
+      "authors": ["Andrew Trevorrow", "Tom Rokicki"],
+      "url": "https://golly.sourceforge.io/",
+      "year": 2025,
+      "version": "5.0",
+      "summary": "Open-source CA explorer supporting hashlife algorithm (130B cell-gen/sec), multiple topologies, 256-state cells, scriptable via Lua/Python",
+      "relevance": "Reference implementation for CA exploration tools. Shows what power users expect."
+    },
+    {
+      "id": "S2",
+      "type": "software",
+      "title": "MCell - Mirek's Cellebration",
+      "authors": ["Mirek Wójtowicz"],
+      "url": "https://github.com/MiDevel/mcell-webapp",
+      "year": 2024,
+      "summary": "Web-based CA explorer mentioned in Wolfram's NKS. Preset rules, gallery approach.",
+      "relevance": "Web-based precedent. Gallery-focused rather than survey-focused."
+    },
+    {
+      "id": "S3",
+      "type": "documentation",
+      "title": "IndexedDB Best Practices",
+      "url": "https://dexie.org/docs/Tutorial/Best-Practices",
+      "year": 2024,
+      "summary": "Use transactions, bulk operations (bulkAdd/bulkPut), batch processing ~1000 items, avoid offset() for pagination, index optimization critical",
+      "relevance": "Direct guidance for storing 262k rules efficiently"
+    },
+    {
+      "id": "S4",
+      "type": "documentation",
+      "title": "Dexie.js Performance Issues",
+      "url": "https://github.com/dfahlander/Dexie.js/issues/1170",
+      "year": 2024,
+      "summary": "Reading 50k items causes multi-second freezes. Avoid storing table references in objects (causes 10-100x slowdown).",
+      "relevance": "Critical performance gotchas for 262k records"
+    },
+    {
+      "id": "S5",
+      "type": "library",
+      "title": "Plotly.js",
+      "url": "https://plotly.com/javascript/",
+      "year": 2024,
+      "summary": "High-level declarative charting, WebGL-backed scattergl trace handles ~1M points with smooth interaction. Built on d3.js and stack.gl.",
+      "relevance": "Mature option for Atlas visualization, handles scale"
+    },
+    {
+      "id": "S6",
+      "type": "library",
+      "title": "Scatter-GL (Google PAIR)",
+      "url": "https://github.com/PAIR-code/scatter-gl",
+      "year": 2024,
+      "summary": "Interactive 3D/2D WebGL scatter renderer from TensorFlow Projector. Tens of thousands of points.",
+      "relevance": "Google's solution for ML embedding visualization. Similar use case."
+    },
+    {
+      "id": "S7",
+      "type": "library",
+      "title": "Regl-Scatterplot",
+      "url": "https://github.com/flekschas/regl-scatterplot",
+      "year": 2024,
+      "summary": "Scalable WebGL scatter plot using Regl. Renderer class approach, can share between instances.",
+      "relevance": "Lower-level control, performance-focused"
+    },
+    {
+      "id": "S8",
+      "type": "library",
+      "title": "Deck.gl",
+      "url": "https://deck.gl",
+      "year": 2024,
+      "summary": "Layer-based WebGL visualization. 1M+ points at 60 FPS. Pre-built layers for scatter, heatmap, etc. Uber's framework.",
+      "relevance": "Very performant, layer approach might be overkill for single scatter plot"
+    }
+  ]
+}

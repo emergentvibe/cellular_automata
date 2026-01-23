@@ -1,0 +1,98 @@
+[
+  {
+    "id": "R1",
+    "title": "Rewrite Home Page Pitch",
+    "description": "Rewrite home page with 4 sections: (1) Hero with animated surprising rule, (2) 'The Space' explaining 262k possibilities, (3) 'The Method' describing systematic survey, (4) 'The Vision' explaining emergence research, (5) 'The Invitation' with CTAs",
+    "confidence": "high",
+    "target_version": "v0.1",
+    "target_sprint": "Sprint 2",
+    "conditions": [],
+    "implementation_notes": "Full content drafted in panel transcript. Lead with wonder, explain method, reveal vision, invite participation. Keep jargon minimal, link to 'About the Research' for depth.",
+    "related_tensions": ["T2"],
+    "supporting_sources": ["S5", "S8"]
+  },
+  {
+    "id": "R2",
+    "title": "Revised 10-Sprint Roadmap",
+    "description": "v0.1 (4 sprints, 6-8w): Data+Atlas+Detail+Lab. v0.2 (3 sprints, 4-6w): Metrics SDK+Pass2+Compare. v0.3 (3 sprints, 6-8w): Topology survey+3D+Hierarchy detection. Each version ships value independently.",
+    "confidence": "high",
+    "target_version": "Roadmap",
+    "target_sprint": null,
+    "conditions": ["Each version validated before proceeding to next"],
+    "implementation_notes": "v0.1 validates survey explorer concept. v0.2 adds extensibility (research platform). v0.3 adds topology comparison (fundamental research). Incremental, shippable, coherent.",
+    "related_tensions": ["T1"],
+    "supporting_sources": []
+  },
+  {
+    "id": "R3",
+    "title": "Extensible Metrics Architecture",
+    "description": "Metrics as versioned data objects with sandboxed WebWorker execution. Users define metrics (JS code), test on samples, queue execution. Results append to rule.metrics[metricId-v]. Dependency graph ensures correct execution order.",
+    "confidence": "high",
+    "target_version": "v0.2",
+    "target_sprint": "Sprint 5",
+    "conditions": ["WebWorker sandbox tested for security", "Standard utils API defined (simulate, detectPattern, etc)"],
+    "implementation_notes": "See panel transcript for full metric schema. Key: code is data, execution is sandboxed (30s timeout, no network/DOM), output validated against schema. Test on 10 samples before queuing.",
+    "related_tensions": ["T4"],
+    "supporting_sources": ["S1"]
+  },
+  {
+    "id": "R4",
+    "title": "Final Data Schema (Append-Only)",
+    "description": "Rules table with topology/tiling/neighborhood fields (v0.1), metrics object for versioned extensible metrics (v0.2+). Metrics table stores metric definitions. Passes table tracks analysis passes. Append-only design enables migration-free evolution.",
+    "confidence": "high",
+    "target_version": "v0.1",
+    "target_sprint": "Sprint 1",
+    "conditions": [],
+    "implementation_notes": "Full schema in panel transcript. Key decisions: topology in v0.1 (all=flat-torus initially), metrics.metricId-v structure for versioning, passes array tracks which analysis passes included this rule. No field ever deleted/renamed.",
+    "related_tensions": ["T3"],
+    "supporting_sources": []
+  },
+  {
+    "id": "R5",
+    "title": "Topology Implementation Strategy",
+    "description": "Phase 1 (v0.1): Add topology/tiling/neighborhood fields, all rules=flat-torus. Phase 2 (v0.2): Lab supports topology selection, new rules stored with different topology. Phase 3 (v0.3): Survey 5k-10k rules on 2-3 topologies, comparative analysis UI.",
+    "confidence": "high",
+    "target_version": "v0.1 (schema), v0.3 (survey)",
+    "target_sprint": "Sprint 1 (schema), Sprint 8 (survey)",
+    "conditions": ["v0.3 requires months of compute for topology surveys"],
+    "implementation_notes": "Topology is fundamental research dimension (not feature). Include in data model NOW (cheap, future-proof), defer surveying to v0.3 (expensive). Detail page can simulate any topology client-side in v0.2 as preview.",
+    "related_tensions": ["T3"],
+    "supporting_sources": ["S3"]
+  },
+  {
+    "id": "R6",
+    "title": "Dual-Goal Support via Layered UI",
+    "description": "Support both 'find cool CAs' (explorers) and 'understand fundamentals' (scientists) through progressive disclosure. Explorers: visual Atlas, animations, minimal jargon. Scientists: filters, statistics, CSV export, metrics. Same data, different affordances.",
+    "confidence": "medium",
+    "target_version": "v0.1-v0.3",
+    "target_sprint": "Ongoing design principle",
+    "conditions": ["User testing validates both modes are usable"],
+    "implementation_notes": "Don't force users to choose audience. Home page appeals to explorers, 'About Research' link for scientists. Atlas supports visual browse AND statistical filtering. Detail shows animation AND metrics. Data page for export.",
+    "related_tensions": [],
+    "supporting_sources": []
+  },
+  {
+    "id": "R7",
+    "title": "Success Metrics by Version",
+    "description": "v0.1: 100+ Atlas users, 10+ Lab contributors, 5+ feature requests. v0.2: 10+ custom metrics, 3+ contributed to core, 50+ Pass 2 explorers. v0.3: 5k+ non-flat-torus rules, 1+ external research paper, statistical significance on topology effects.",
+    "confidence": "medium",
+    "target_version": "Post-ship validation",
+    "target_sprint": null,
+    "conditions": [],
+    "implementation_notes": "These are validation metrics, not goals. Ship each version, measure engagement, decide whether to continue. v0.1 validates concept. v0.2 validates extensibility. v0.3 validates research value.",
+    "related_tensions": [],
+    "supporting_sources": []
+  },
+  {
+    "id": "R8",
+    "title": "What NOT to Build",
+    "description": "Defer to v0.4+: real-time collaboration, ML prediction of interesting rules, 3D cellular automata (different rule space), mobile app, social features (comments, ratings). These are orthogonal to core vision.",
+    "confidence": "high",
+    "target_version": "Ongoing",
+    "target_sprint": null,
+    "conditions": [],
+    "implementation_notes": "Resist feature creep. Each version should do one thing excellently. Ship v0.1-v0.3 first, validate research platform concept, THEN consider expansions. Say no to good ideas that don't serve core.",
+    "related_tensions": [],
+    "supporting_sources": []
+  }
+]

@@ -1,0 +1,80 @@
+{
+  "tensions": [
+    {
+      "id": "T1",
+      "title": "Minimalism vs Completeness",
+      "description": "Should v0.1 include a Home page explaining the research, or ship with only functional tools?",
+      "position_a": {
+        "label": "Radical Minimalism",
+        "advocate": "Dieter Rams",
+        "argument": "Ship 3 pages: Atlas, Detail, Lab. No explanation page. Tools speak for themselves. Users who need context will ask. Adding Home page is scope creep.",
+        "strength": "Reduces Sprint 2 scope by ~20%. Forces the tool to be self-explanatory."
+      },
+      "position_b": {
+        "label": "Contextual Completeness",
+        "advocate": "Fred Brooks / Bret Victor",
+        "argument": "Ship 4 pages: add Home. Without context, the Atlas is inscrutable to new users. A markdown page explaining the research question is cheap and essential. Conceptual integrity includes communicating intent.",
+        "strength": "Makes the tool accessible to non-expert users. Research tools should explain the research."
+      },
+      "resolution": "Include Home page in Sprint 2, but keep it lightweight (markdown, no complex interactions). Home is drafted in parallel with Sprint 1, so no schedule impact.",
+      "status": "resolved"
+    },
+    {
+      "id": "T2",
+      "title": "2D vs 3D Visualization",
+      "description": "Should the Atlas be a 2D scatter plot or a 3D interactive visualization?",
+      "position_a": {
+        "label": "2D Small Multiples",
+        "advocate": "Edward Tufte",
+        "argument": "3D visualizations are almost always worse than 2D. Perspective distortion obscures data. Use three 2D scatters (lambda-D, lambda-gamma, D-gamma) or a single 2D scatter colored by the third variable. Color is a third dimension without distortion.",
+        "strength": "2D is proven, performs better, easier to implement. Avoids disorientation from rotation."
+      },
+      "position_b": {
+        "label": "3D Interactive Exploration",
+        "advocate": "Bret Victor",
+        "argument": "Static 3D on paper is bad. Interactive WebGL 3D that you rotate, zoom, and slice is different. It's embodied exploration. Lambda, D, and gamma are independent axes; 3D scatter shows the full embedding. Color alone can't separate overlapping clusters.",
+        "strength": "3D reveals structure invisible in 2D projections. Google's Scatter-GL exists because 3D adds value for embedding exploration."
+      },
+      "resolution": "Start with 2D in Sprint 2 (lambda x-axis, dimension y-axis, colored by gamma). Defer 3D to Sprint 6. Revisit based on user feedback. If users request it or if 2D proves insufficient, add 3D. Performance and implementation simplicity favor 2D for v0.1.",
+      "status": "resolved"
+    },
+    {
+      "id": "T3",
+      "title": "Schema Flexibility vs Simplicity",
+      "description": "Should the IndexedDB schema anticipate future topology support, or be designed only for current needs (flat torus)?",
+      "position_a": {
+        "label": "Flexible Schema",
+        "advocate": "Barbara Liskov / Rich Hickey",
+        "argument": "Design for extension now. Topology support is planned (Sprint 8-10). Schema should include topology field from the start, with 'flat-torus' as default. Separate Measurements store so one rule can have multiple topology observations. Avoids painful migration later.",
+        "strength": "Future-proof. Adding topology later is seamless (additive, no schema change)."
+      },
+      "position_b": {
+        "label": "Simple Schema",
+        "advocate": "Fred Brooks / Dieter Rams",
+        "argument": "Design for current needs only. Don't add fields for hypothetical future features (YAGNI). Schema should store ruleId + metrics for flat torus, period. If topology support is added in Sprint 8, add a topology field then. Premature generalization adds complexity now for uncertain future benefit.",
+        "strength": "Simpler to understand and implement. No speculative code. Sprint 1 is faster."
+      },
+      "resolution": "Simple schema with documented extension path. Don't create separate Measurements store (over-engineering). Use single 'rules' store with current fields. When topology support is added (Sprint 8), add 'topology' field with default value 'flat-torus'. Existing records inherit default. This is additive (no migration), but doesn't over-complicate Sprint 1.",
+      "status": "resolved"
+    },
+    {
+      "id": "T4",
+      "title": "Algorithmic vs Manual Hierarchy Detection",
+      "description": "Should the system algorithmically detect still lifes, oscillators, and gliders, or rely on manual user annotation?",
+      "position_a": {
+        "label": "Algorithmic Detection",
+        "advocate": "Stephen Wolfram",
+        "argument": "Research validity requires systematic detection. Manual annotation is subjective and incomplete. Algorithmic detection of stable patterns (still lifes), periodic patterns (oscillators), and spaceships (gliders) is tractable. Run on promising rules in Sprint 5. Store detected structures in database.",
+        "strength": "Objective, complete, enables quantitative comparison (e.g., 'rules with gliders' vs 'rules without')."
+      },
+      "position_b": {
+        "label": "Manual Annotation",
+        "advocate": "Edward Tufte / Dieter Rams",
+        "argument": "Algorithmic detection is expensive and premature. We don't know what users will want to annotate. Start with free-text notes field. Users write 'Has gliders', 'Block + blinker still life'. Visual detection is faster than running long simulations. Structure the schema later based on actual usage.",
+        "strength": "Fast to implement, honest (doesn't promise AI that doesn't exist), discovers what matters through usage."
+      },
+      "resolution": "Start manual (Sprint 3: add notes field), add algorithmic later (Sprint 5+). Hierarchy detection MVP = display period (already measured) + free-text notes. This is cheap and honest. After users interact, we'll know what structures are worth detecting algorithmically (still lifes, oscillators, spaceships). Sprint 5 adds algorithmic detection for those patterns based on actual demand.",
+      "status": "resolved"
+    }
+  ]
+}

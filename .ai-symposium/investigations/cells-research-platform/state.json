@@ -1,0 +1,45 @@
+{
+  "investigation_id": "cells-research-platform",
+  "created_at": "2026-01-23T11:45:00Z",
+  "updated_at": "2026-01-23T12:30:00Z",
+  "original_question": "How should the Cells home page pitch reflect the expanded research platform vision? What architecture supports extensible surveys? What should the sprint backlog prioritize? Should topology be prioritized earlier?",
+  "clarified_scope": "Cells is a research database of systematically surveyed cellular automata, with multi-pass extensible analysis, designed to understand how universe structure (topology, tiling, neighborhood) affects emergent complexity. Roadmap: v0.1 = Survey Explorer (4 sprints), v0.2 = Research Platform with extensible metrics (3 sprints), v0.3 = Topology Explorer (3 sprints).",
+  "status": "active",
+  "current_panel": {
+    "number": 1,
+    "type": "exploration",
+    "status": "completed"
+  },
+  "panel_history": [
+    {
+      "number": 1,
+      "type": "exploration",
+      "file": "panels/panel-01-exploration.md",
+      "completed_at": "2026-01-23T12:30:00Z",
+      "experts": ["Stephen Wolfram", "Gregory Bateson", "Bret Victor", "Alan Kay", "Rich Hickey", "Fred Brooks", "Dieter Rams"]
+    }
+  ],
+  "recommendation_count": 8,
+  "tension_count": 4,
+  "pending_decisions": [
+    {
+      "type": "next_panel",
+      "options": ["technical", "design", "synthesis"],
+      "context": "Panel 1 complete. Mapped the vision, designed data model, outlined roadmap. Could go technical (deep-dive on extensibility architecture), design (UI for layered analysis), or synthesize (if ready to conclude)."
+    }
+  ],
+  "expert_pool": [
+    "Stephen Wolfram",
+    "Gregory Bateson",
+    "Bret Victor",
+    "Alan Kay",
+    "Rich Hickey",
+    "Fred Brooks",
+    "Dieter Rams"
+  ],
+  "next_suggested": [
+    "[A] Technical Panel - Deep-dive on extensible metrics architecture (sandboxing, API design, performance)",
+    "[B] Design Panel - UI/UX for layered analysis pipeline (pass filtering, metric selection, visual encoding)",
+    "[S] Synthesis - If ready to conclude and deliver concrete home page pitch + sprint backlog"
+  ]
+}

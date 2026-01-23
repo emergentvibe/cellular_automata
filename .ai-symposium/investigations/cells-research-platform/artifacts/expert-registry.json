@@ -1,0 +1,110 @@
+[
+  {
+    "expert": "Stephen Wolfram",
+    "panels": [1],
+    "key_contributions": [
+      "Grounded discussion in computational irreducibility (can't predict interesting rules, must run them)",
+      "Emphasized systematic exploration as epistemological necessity, not just pragmatism",
+      "Pushed for topology as fundamental research dimension (validated by Warne 2013)",
+      "Advocated for versioned metrics (reproducibility over time)",
+      "Noted that finding interesting CAs and understanding fundamentals aren't separate goals"
+    ],
+    "positions": [
+      "Include extensibility in v0.1 (later resolved to defer to v0.2)",
+      "Explain computational irreducibility on home page (resolved to separate 'About' page)"
+    ]
+  },
+  {
+    "expert": "Gregory Bateson",
+    "panels": [1],
+    "key_contributions": [
+      "Framed 'find cool CAs' and 'understand fundamentals' as scales of the same pattern, not separate goals",
+      "Explained layered analysis as coarse-graining (emergence better expressed at higher abstractions)",
+      "Described extensible metrics as 'sensors' - more sensors = better perception of rule space",
+      "Noted that UI layers should make the research process itself visible",
+      "Emphasized 'patterns on patterns' as the core insight"
+    ],
+    "positions": [
+      "Topology is fundamental (include in data model now)"
+    ]
+  },
+  {
+    "expert": "Bret Victor",
+    "panels": [1],
+    "key_contributions": [
+      "Distinguished 'tool to do research' vs 'tool to present research' - Cells is laboratory, not museum",
+      "Designed extensible metrics UX: define → test on samples → queue → append results",
+      "Proposed progressive disclosure for dual audiences (explorers vs scientists)",
+      "Suggested timeline scrubber for visualizing pass evolution (deferred to v0.2+)",
+      "Emphasized that explorers want serendipity, scientists want rigor - support both through UI affordances"
+    ],
+    "positions": [
+      "Extensibility should be in v0.1 (resolved to v0.2)",
+      "WebWorker sandbox sufficient for security"
+    ]
+  },
+  {
+    "expert": "Alan Kay",
+    "panels": [1],
+    "key_contributions": [
+      "Framed Cells as 'medium for asking new questions' not just database",
+      "Noted that extensible platform means codebase grows with usage (community-contributed metrics)",
+      "Proposed dual-mode metrics: private exploration + public contribution (fork → PR model)",
+      "Clarified that data model and interaction model are separate concerns (Hickey = data, Victor = interaction)",
+      "Suggested 'stages' metaphor for layered analysis (funnel: 262k → 5k → 200)"
+    ],
+    "positions": [
+      "Include extensibility in v0.1 (resolved to v0.2)",
+      "Topology fields in schema now (data model flexibility)"
+    ]
+  },
+  {
+    "expert": "Rich Hickey",
+    "panels": [1],
+    "key_contributions": [
+      "Designed append-only data model (migration-free schema evolution)",
+      "Proposed metrics-as-versioned-data architecture (metricId-v1, metricId-v2, etc)",
+      "Argued that both explorers and scientists want rich query over rich metadata (not separate UIs)",
+      "Clarified extensibility through data: metrics are data, code is data, results are data",
+      "Resolved topology tension: add field now (cheap), survey later (expensive)"
+    ],
+    "positions": [
+      "Data model first (schema drives everything else)",
+      "Extensibility via composition, not configuration",
+      "Defer extensibility features to v0.2, but design data model for it in v0.1"
+    ]
+  },
+  {
+    "expert": "Fred Brooks",
+    "panels": [1],
+    "key_contributions": [
+      "Enforced conceptual integrity throughout ('What IS this thing in one sentence?')",
+      "Warned about second-system effect (don't over-engineer for hypothetical futures)",
+      "Synthesized mental model: 'Research platform for understanding emergence through systematic survey and extensible analysis'",
+      "Validated incremental roadmap (v0.1-v0.3, each version ships value)",
+      "Emphasized that data model decisions are permanent, UI decisions are changeable"
+    ],
+    "positions": [
+      "Defer extensibility to v0.2 (validate core first)",
+      "YAGNI on topology (resolved to include field but defer survey)",
+      "Ship minimal, gather feedback, iterate"
+    ]
+  },
+  {
+    "expert": "Dieter Rams",
+    "panels": [1],
+    "key_contributions": [
+      "Challenged whether expanded vision is coherent or feature creep",
+      "Pushed for concrete definitions ('What does extensible survey mean? Code? Config?')",
+      "Designed home page structure (4 sections: Hook, Context, Vision, Invitation)",
+      "Advocated for simplicity: 'One thing per page, minimum controls'",
+      "Listed 'What NOT to Build' (collaboration, ML, 3D CA, mobile, social features)"
+    ],
+    "positions": [
+      "Defer extensibility to v0.2 (ship simple first)",
+      "YAGNI on topology fields (resolved to include for future-proofing)",
+      "Turing-complete code is dangerous (resolved to WebWorker sandbox)",
+      "Keep home page simple (resolved to separate 'About' page for depth)"
+    ]
+  }
+]

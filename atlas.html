@@ -3,16 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cells - Visualize</title>
+  <title>Cells - Atlas</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <link rel="stylesheet" href="shared/styles.css">
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="shared/db.js"></script>
   <script src="shared/nav.js"></script>
   <style>
     body {
       padding: 1.5rem;
       padding-top: 4.5rem;
     }
-    h1 { color: #4a7a4a; font-size: 1.1rem; letter-spacing: 0.15em; margin-bottom: 0.3rem; }
-    .subtitle { color: #555; font-size: 0.75rem; margin-bottom: 1.5rem; }
+    h1 { color: #7a4a7a; font-size: 1.1rem; letter-spacing: 0.15em; margin-bottom: 0.3rem; }
+    .subtitle { color: #555; font-size: 0.75rem; margin-bottom: 1rem; }
+    .coverage-bar {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.75rem;
+    }
+    .coverage-bar .progress {
+      flex: 1;
+      height: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .coverage-bar .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4a2a4a, #6a3a6a);
+    }
+    .coverage-bar .text {
+      color: #666;
+      white-space: nowrap;
+    }
     .container { max-width: 1600px; margin: 0 auto; }
     .row { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
     .col { flex: 1; min-width: 300px; }
@@ -103,8 +132,16 @@
 </head>
 <body>
   <div class="container">
-    <h1>SURVEY VISUALIZATION</h1>
-    <p class="subtitle">Explore the (λ, D, γ) space of Life-like rules</p>
+    <h1>ATLAS</h1>
+    <p class="subtitle">Explore the rule space of Life-like cellular automata</p>
+
+    <div class="coverage-bar">
+      <span class="text" id="coverage-text">Loading...</span>
+      <div class="progress">
+        <div class="progress-fill" id="coverage-fill" style="width: 0%"></div>
+      </div>
+      <span class="text" id="coverage-pct">--%</span>
+    </div>
 
     <div class="row">
       <div class="col-wide">
@@ -168,8 +205,7 @@
         <div class="panel">
           <div class="panel-title">Load Data</div>
           <input type="file" id="file-input" accept=".csv" style="margin-bottom: 0.5rem; font-size: 0.75rem;">
-          <button id="btn-load-v1">Load v1</button>
-          <button id="btn-load-v2">Load v2</button>
+          <button id="btn-load-db" class="primary">Load from Database</button>
           <div id="load-status" style="margin-top: 0.5rem; font-size: 0.7rem; color: #555;"></div>
         </div>
 
@@ -395,10 +431,11 @@
       const xVals = filteredData.map(r => r[xKey]).filter(v => v !== undefined && v > -10);
       const yVals = filteredData.map(r => r[yKey]).filter(v => v !== undefined && v > -10);
 
-      const xMin = Math.min(...xVals);
-      const xMax = Math.max(...xVals);
-      const yMin = Math.min(...yVals);
-      const yMax = Math.max(...yVals);
+      // Use reduce to avoid call stack overflow with large arrays
+      const xMin = xVals.reduce((a, b) => Math.min(a, b), Infinity);
+      const xMax = xVals.reduce((a, b) => Math.max(a, b), -Infinity);
+      const yMin = yVals.reduce((a, b) => Math.min(a, b), Infinity);
+      const yMax = yVals.reduce((a, b) => Math.max(a, b), -Infinity);
 
       const xRange = xMax - xMin || 1;
       const yRange = yMax - yMin || 1;
@@ -438,8 +475,8 @@
         colorScale = r => classColors[r.classification] || '#444';
       } else {
         const cVals = filteredData.map(r => r[colorBy]).filter(v => v !== undefined);
-        const cMin = Math.min(...cVals);
-        const cMax = Math.max(...cVals);
+        const cMin = cVals.reduce((a, b) => Math.min(a, b), Infinity);
+        const cMax = cVals.reduce((a, b) => Math.max(a, b), -Infinity);
         const cRange = cMax - cMin || 1;
         colorScale = r => {
           const t = (r[colorBy] - cMin) / cRange;
@@ -495,8 +532,9 @@
       const vals = data.map(r => r[key]).filter(v => v !== undefined && v > -10);
       if (vals.length === 0) return;
 
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
+      // Use reduce instead of spread to avoid call stack overflow with large arrays
+      const min = vals.reduce((a, b) => Math.min(a, b), Infinity);
+      const max = vals.reduce((a, b) => Math.max(a, b), -Infinity);
       const range = max - min || 1;
       const numBins = 50;
       const bins = new Array(numBins).fill(0);
@@ -578,8 +616,33 @@
       reader.readAsText(file);
     });
 
-    document.getElementById('btn-load-v1').addEventListener('click', () => loadFromStorage('cells_survey_v2'));
-    document.getElementById('btn-load-v2').addEventListener('click', () => loadFromStorage('cells_survey_v3'));
+
+    document.getElementById('btn-load-db').addEventListener('click', async () => {
+      try {
+        const rules = await CellsDB.getAllRules();
+        if (rules && rules.length > 0) {
+          // Convert IndexedDB format to visualize format
+          data = rules.map(r => ({
+            rule_id: r.ruleId,
+            rule_string: r.ruleString || CellsDB.ruleIdToNotation(r.ruleId),
+            lambda: r.lambda,
+            D: r.dimension,
+            gamma: r.gamma,
+            classification: r.classification,
+            period: r.period,
+            pop_final: r.population,
+            pop_mean: r.pop_mean,
+            activity_mean: r.activity_mean
+          }));
+          updateAll();
+          document.getElementById('load-status').textContent = `Loaded ${data.length} rules from database`;
+        } else {
+          document.getElementById('load-status').textContent = 'No rules in database';
+        }
+      } catch (e) {
+        document.getElementById('load-status').textContent = 'Error: ' + e.message;
+      }
+    });
     document.getElementById('btn-refresh').addEventListener('click', updateAll);
 
     ['x-axis', 'y-axis', 'color-by', 'filter-class'].forEach(id => {
@@ -655,6 +718,47 @@
     scatterCanvas.addEventListener('mouseleave', () => {
       tooltip.style.display = 'none';
     });
+
+    // Update coverage bar
+    async function updateCoverage() {
+      try {
+        const stats = await CellsDB.getStats();
+        document.getElementById('coverage-text').textContent =
+          `${stats.count.toLocaleString()} / ${stats.total.toLocaleString()} rules surveyed`;
+        document.getElementById('coverage-pct').textContent = `${stats.percentage}%`;
+        document.getElementById('coverage-fill').style.width = `${stats.percentage}%`;
+      } catch (e) {
+        document.getElementById('coverage-text').textContent = 'Database not available';
+      }
+    }
+
+    // Auto-load from database on page load
+    async function autoLoad() {
+      await updateCoverage();
+      try {
+        const rules = await CellsDB.getAllRules();
+        if (rules && rules.length > 0) {
+          data = rules.map(r => ({
+            rule_id: r.ruleId,
+            rule_string: r.ruleString || CellsDB.ruleIdToNotation(r.ruleId),
+            lambda: r.lambda,
+            D: r.dimension,
+            gamma: r.gamma,
+            classification: r.classification,
+            period: r.period,
+            pop_final: r.population,
+            pop_mean: r.pop_mean,
+            activity_mean: r.activity_mean
+          }));
+          updateAll();
+          document.getElementById('load-status').textContent = `${data.length} rules loaded`;
+        }
+      } catch (e) {
+        console.error('Auto-load failed:', e);
+      }
+    }
+
+    autoLoad();
   </script>
 </body>
 </html>

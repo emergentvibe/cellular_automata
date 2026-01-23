@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cells - Survey</title>
   <link rel="stylesheet" href="shared/styles.css">
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="shared/db.js"></script>
   <script src="shared/nav.js"></script>
   <style>
     body {
@@ -589,6 +591,58 @@
     let totalSteps = 2000;
     let batchSize = 10;
     let autosaveInterval = 1000;
+
+    // ============================================
+    // INDEXEDDB INTEGRATION
+    // ============================================
+    async function initFromIndexedDB() {
+      try {
+        const surveyedIds = await CellsDB.getSurveyedRuleIds();
+        surveyedIds.forEach(id => completedSet.add(id));
+        log(`Loaded ${completedSet.size} rules from IndexedDB`, 'info');
+        updateProgress();
+        if (window.updateNavDbStatus) window.updateNavDbStatus();
+      } catch (e) {
+        log(`IndexedDB load failed: ${e.message}`, 'warning');
+      }
+    }
+
+    async function saveToIndexedDB(result) {
+      try {
+        const rule = {
+          ruleId: result.rule_id,
+          ruleString: result.rule_string,
+          lambda: result.lambda,
+          dimension: result.D,
+          gamma: result.gamma,
+          population: result.pop_final,
+          classification: result.classification,
+          period: result.period,
+          // Additional fields
+          lambda_std: result.lambda_std,
+          D_r_squared: result.D_r_squared,
+          period_confidence: result.period_confidence,
+          pop_peak: result.pop_peak,
+          pop_min: result.pop_min,
+          pop_mean: result.pop_mean,
+          pop_std: result.pop_std,
+          pop_trend: result.pop_trend,
+          activity_mean: result.activity_mean,
+          activity_std: result.activity_std,
+          total_births: result.total_births,
+          total_deaths: result.total_deaths,
+          time_to_settle: result.time_to_settle,
+          extinction_time: result.extinction_time,
+          cluster_count: result.cluster_count,
+          measured_at: new Date().toISOString(),
+          notes: ''
+        };
+        await CellsDB.saveRule(rule);
+      } catch (e) {
+        // Silently fail - CSV backup still works
+        console.warn('IndexedDB save failed:', e);
+      }
+    }
 
     // ============================================
     // DOM ELEMENTS
@@ -1857,11 +1911,15 @@
           completedSet.add(ruleId);
           rulesThisSession++;
 
+          // Save to IndexedDB
+          await saveToIndexedDB(result);
+
           // Update UI periodically
           if (Date.now() - lastUIUpdate > 200) {
             updateCurrentRule(result);
             addResultToTable(result);
             updateProgress();
+            if (window.updateNavDbStatus) window.updateNavDbStatus();
             lastUIUpdate = Date.now();
           }
 
@@ -2315,6 +2373,9 @@
     // INIT
     // ============================================
     async function init() {
+      // Load existing results from IndexedDB
+      await initFromIndexedDB();
+
       const success = await initWebGPU();
       if (success) {
         log('Ready to start GPU-accelerated survey', 'success');

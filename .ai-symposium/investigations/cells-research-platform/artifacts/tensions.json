@@ -1,0 +1,74 @@
+[
+  {
+    "id": "T1",
+    "title": "When to Ship Extensibility",
+    "description": "Should user-defined metrics (extensibility) be in v0.1 or v0.2?",
+    "position_a": {
+      "stance": "Include extensibility in v0.1",
+      "proponents": ["Wolfram", "Kay"],
+      "argument": "Extensibility is core to the research platform vision. Without it, v0.1 is just a browser, not a laboratory. Users should be able to define new metrics from day one."
+    },
+    "position_b": {
+      "stance": "Defer extensibility to v0.2",
+      "proponents": ["Brooks", "Rams"],
+      "argument": "Validate the core survey explorer first. Extensibility adds complexity (sandboxing, security, UX). Ship v0.1 minimal, gather feedback, then add extensibility in v0.2 if users want it."
+    },
+    "resolution": "Defer to v0.2, but acknowledge extensibility vision in v0.1 home page pitch. v0.1 ships with 4-5 built-in metrics (lambda, gamma, dimension, period). v0.2 adds metrics SDK. Data model supports both from day one (versioned metrics structure).",
+    "status": "resolved",
+    "implications": "v0.1 timeline stays at 6-8 weeks. Home page must clearly state 'research platform' vision even though extensibility isn't live yet. Risk: users might not return for v0.2 if v0.1 doesn't deliver extensibility promise."
+  },
+  {
+    "id": "T2",
+    "title": "How Much to Explain on Home Page",
+    "description": "Should home page explain computational irreducibility and deep research concepts, or keep it simple?",
+    "position_a": {
+      "stance": "Explain computational irreducibility",
+      "proponents": ["Wolfram"],
+      "argument": "Computational irreducibility is the epistemological foundation. It explains WHY we need to survey (can't predict which rules are interesting). Users should understand this."
+    },
+    "position_b": {
+      "stance": "Keep home page simple, link to depth",
+      "proponents": ["Rams", "Brooks"],
+      "argument": "Home page should hook users, not teach theory. 'Computational irreducibility' is jargon. Lead with wonder (animations), explain method (survey), reveal vision (emergence). Link to 'About the Research' for deep explanation."
+    },
+    "resolution": "Simple home page with 4 sections: Hero (animation), The Space (262k rules), The Method (survey), The Vision (emergence). Add 'About the Research' link to separate page with computational irreducibility, topology effects, hierarchical emergence, etc.",
+    "status": "resolved",
+    "implications": "Home page appeals to wider audience (explorers + scientists). Scientists click 'About the Research' for depth. Casual users skip theory, dive into Atlas. Progressive disclosure."
+  },
+  {
+    "id": "T3",
+    "title": "Schema Flexibility vs Simplicity",
+    "description": "Should v0.1 schema include topology/tiling/neighborhood fields, or add them later?",
+    "position_a": {
+      "stance": "Include topology fields now",
+      "proponents": ["Wolfram", "Kay", "Bateson"],
+      "argument": "Topology is fundamental to research vision. If we don't include it in schema now, we'll need migration later. Future-proof the data model even if initial data is single-topology."
+    },
+    "position_b": {
+      "stance": "Add topology later (YAGNI)",
+      "proponents": ["Brooks", "Rams"],
+      "argument": "Don't build what you don't need yet. v0.1 only has flat-torus rules. Adding topology/tiling fields now is premature. Wait until v0.3 when we actually survey other topologies."
+    },
+    "resolution": "Include topology/tiling/neighborhood fields in v0.1 schema. All 22,590 existing rules get topology='flat-torus', tiling='square', neighborhood='moore'. This is cheap (just extra columns), future-proof (no migration needed for v0.3), and honest (makes universe structure explicit).",
+    "status": "resolved",
+    "implications": "v0.1 schema is slightly more complex, but migration-free. Users see topology='flat-torus' in Detail page, which educates them that topology is variable (even though only one value exists initially). v0.3 can add sphere/hex rules without schema changes."
+  },
+  {
+    "id": "T4",
+    "title": "Code Extensibility vs Security",
+    "description": "Is user-contributed code (for metrics) safe? How to balance power and security?",
+    "position_a": {
+      "stance": "Turing-complete code is too dangerous",
+      "proponents": ["Rams"],
+      "argument": "User-submitted JavaScript can have infinite loops, steal data, crash browsers. Even sandboxed WebWorkers have risks. Should use restricted DSL instead of full code."
+    },
+    "position_b": {
+      "stance": "WebWorker sandbox is sufficient",
+      "proponents": ["Victor", "Hickey", "Kay"],
+      "argument": "WebWorkers provide isolation. Add time limits (30s), no network access, read-only data. This is safe enough. Restricting to DSL limits what metrics can do (e.g., complex pattern matching requires code)."
+    },
+    "resolution": "Use WebWorker sandbox with constraints: 30s timeout, no network, no DOM, read-only rule data. Provide standard utils API (simulate, detectPattern, etc). Require testing on 10 sample rules before queuing full run. Monitor for abuse, add restrictions if needed.",
+    "status": "resolved",
+    "implications": "v0.2 security model is sandbox + constraints, not restriction. Users can write powerful metrics (glider detection, hierarchy classification) but can't harm system. Trade-off: sophisticated users might hit time/capability limits. Can expand sandbox capabilities in v0.3 if needed."
+  }
+]

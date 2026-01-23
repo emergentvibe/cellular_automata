@@ -2,13 +2,14 @@
 
 (function() {
   const pages = [
-    { href: 'index.html', label: 'Sandbox', section: 'explore' },
-    { href: 'gallery.html', label: 'Gallery', section: 'explore' },
-    { href: 'visualize.html', label: 'Visualize', section: 'explore' },
+    { href: 'home.html', label: 'Home', section: 'main' },
+    { href: 'atlas.html', label: 'Atlas', section: 'main' },
+    { href: 'detail.html', label: 'Detail', section: 'main' },
     { divider: true },
-    { href: 'survey-gpu.html', label: 'Survey', section: 'research' },
-    { href: 'analyze-pass2.html', label: 'Pass 2', section: 'research' },
-    { href: 'test-measurements.html', label: 'Measurements', section: 'research' },
+    { href: 'survey-gpu.html', label: 'Lab', section: 'research' },
+    { href: 'analyze-pass2.html', label: 'Analysis', section: 'research' },
+    { divider: true },
+    { href: 'migrate-csv.html', label: 'Data', section: 'tools' },
   ];
 
   function getCurrentPage() {
@@ -24,7 +25,7 @@
     nav.className = 'site-nav';
 
     let html = `
-      <a href="index.html" class="nav-brand">CELLS</a>
+      <a href="home.html" class="nav-brand">CELLS</a>
       <div class="nav-links">
     `;
 
@@ -37,10 +38,39 @@
       }
     });
 
-    html += '</div>';
+    html += `
+      </div>
+      <div class="nav-db-status" id="nav-db-status" title="Click to refresh">
+        <span class="db-icon">◉</span>
+        <span class="db-count">--</span>
+      </div>
+    `;
     nav.innerHTML = html;
 
     return nav;
+  }
+
+  async function updateDbStatus() {
+    const statusEl = document.getElementById('nav-db-status');
+    if (!statusEl) return;
+
+    // Check if CellsDB is available
+    if (typeof CellsDB === 'undefined') {
+      statusEl.querySelector('.db-count').textContent = 'no db';
+      statusEl.classList.add('db-offline');
+      return;
+    }
+
+    try {
+      const stats = await CellsDB.getStats();
+      statusEl.querySelector('.db-count').textContent = `${stats.count.toLocaleString()} rules`;
+      statusEl.classList.remove('db-offline');
+      statusEl.classList.add('db-online');
+      statusEl.title = `${stats.display}\nClick to refresh`;
+    } catch (e) {
+      statusEl.querySelector('.db-count').textContent = 'error';
+      statusEl.classList.add('db-offline');
+    }
   }
 
   function injectNav() {
@@ -49,7 +79,19 @@
 
     // Add padding to body for fixed nav
     document.body.style.paddingTop = '3.5rem';
+
+    // Add click handler for db status refresh
+    const statusEl = document.getElementById('nav-db-status');
+    if (statusEl) {
+      statusEl.addEventListener('click', updateDbStatus);
+    }
+
+    // Update db status after a short delay (let Dexie load)
+    setTimeout(updateDbStatus, 500);
   }
+
+  // Expose updateDbStatus globally for other scripts to call
+  window.updateNavDbStatus = updateDbStatus;
 
   // Run on DOM ready
   if (document.readyState === 'loading') {

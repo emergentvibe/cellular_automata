@@ -1,0 +1,37 @@
+{
+  "investigation_id": "cells-roadmap-v1",
+  "created_at": "2026-01-23T00:00:00Z",
+  "updated_at": "2026-01-23T00:00:00Z",
+  "original_question": "How should the Cells research laboratory be architected? Sprint ordering, IndexedDB schema, visualization approach, hierarchy detection, interest scoring, and MVP definition.",
+  "clarified_scope": "Architecture and sprint planning for v0.1 release. Focus on data layer, Atlas visualization, Detail page, and resumable survey. Defer Collections, 3D, topology support to v0.2+.",
+  "status": "completed",
+  "current_panel": {
+    "number": 1,
+    "type": "architecture",
+    "status": "completed"
+  },
+  "panel_history": [
+    {
+      "number": 1,
+      "type": "architecture",
+      "file": "panels/panel-01-architecture.md",
+      "completed_at": "2026-01-23T00:00:00Z",
+      "experts": ["Fred Brooks", "Rich Hickey", "Barbara Liskov", "Dieter Rams", "Edward Tufte", "Bret Victor", "Stephen Wolfram"]
+    }
+  ],
+  "recommendation_count": 10,
+  "tension_count": 4,
+  "pending_decisions": [],
+  "expert_pool": [
+    "Fred Brooks",
+    "Rich Hickey",
+    "Barbara Liskov",
+    "Dieter Rams",
+    "Edward Tufte",
+    "Bret Victor",
+    "Stephen Wolfram"
+  ],
+  "next_suggested": [
+    "Investigation complete. Recommendations are concrete and actionable. User can proceed with implementation."
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "experts_consulted": [
+    {
+      "name": "Fred Brooks",
+      "domain": "Software Architecture",
+      "key_contributions": [
+        "Conceptual integrity principle: one database, multiple views",
+        "Sprint structure: each sprint delivers independent user value",
+        "Four-sprint v0.1 plan with clear user flows",
+        "Decision framework: benchmark libraries empirically (Plotly vs Scatter-GL)"
+      ],
+      "notable_positions": [
+        "Established the 'one thing' principle: Cells is a database of measured rules with different views",
+        "Insisted on Home page for conceptual integrity (communicate intent)",
+        "Championed user flow thinking over component thinking"
+      ]
+    },
+    {
+      "name": "Rich Hickey",
+      "domain": "Data-First Design",
+      "key_contributions": [
+        "Data as unifying concept: survey produces data, Atlas/Detail consume data",
+        "Schema design: two stores (rules, collections), document-oriented",
+        "Denormalized approach: store complete measurements, no joins",
+        "Extension path: add topology field later, additive not breaking"
+      ],
+      "notable_positions": [
+        "Advocated for flexible schema anticipating topology support",
+        "Proposed storing measurements as nested arrays (later rejected for query efficiency)",
+        "Settled on simple schema with documented extension path"
+      ]
+    },
+    {
+      "name": "Barbara Liskov",
+      "domain": "Abstraction & Interfaces",
+      "key_contributions": [
+        "Identified lack of data layer as root of incoherence",
+        "Clean separation: Rules (entities) vs Measurements (observations)",
+        "Query API layer: UI → Query API → IndexedDB",
+        "Composite indexes for efficient range queries"
+      ],
+      "notable_positions": [
+        "Advocated for normalized schema (separate Measurements store)",
+        "Emphasized clean abstractions and interface boundaries",
+        "Interest score should be computed on-demand, not stored"
+      ]
+    },
+    {
+      "name": "Dieter Rams",
+      "domain": "Minimalism & Product Design",
+      "key_contributions": [
+        "Radical minimalism: 3 pages (Atlas, Detail, Lab), no Home",
+        "v0.1 scope control: four features, nothing more",
+        "Question-driven: 'What is minimum useful system?'",
+        "Deferred features: Collections, Compare, 3D, hierarchy to v0.2"
+      ],
+      "notable_positions": [
+        "Initially excluded Home page (overruled for accessibility)",
+        "Championed 'ship and learn' over planning beyond v0.1",
+        "Simplicity principle: start 2D, add 3D only if users ask"
+      ]
+    },
+    {
+      "name": "Edward Tufte",
+      "domain": "Information Visualization",
+      "key_contributions": [
+        "2D visualization advocacy: small multiples, no 3D distortion",
+        "Color as third dimension: diverging colormap for gamma",
+        "Data transparency: show all points, no aggregation",
+        "Coverage communication: display '22,590 / 262,144 (8.6%)' prominently"
+      ],
+      "notable_positions": [
+        "Strong opposition to 3D visualization (perspective distortion obscures data)",
+        "Visual detection faster than algorithmic detection for hierarchy",
+        "Sparse sampling can reveal structure if labeled honestly"
+      ]
+    },
+    {
+      "name": "Bret Victor",
+      "domain": "Tools for Thought",
+      "key_contributions": [
+        "Integrated functionality: survey and exploration should be unified",
+        "Discovery during surveying: watch rules being tested, pause to investigate",
+        "Embodied exploration: interactive 3D has value (disagreed with Tufte)",
+        "Store animation previews for instant playback on hover"
+      ],
+      "notable_positions": [
+        "Challenged separation of Lab (surveying) and Atlas (exploring results)",
+        "Advocated for 3D interactive visualization (overruled for v0.1)",
+        "Emphasized delight: tiny animation previews, smooth transitions"
+      ]
+    },
+    {
+      "name": "Stephen Wolfram",
+      "domain": "Cellular Automata Research",
+      "key_contributions": [
+        "Insight definition: discover what makes rules interesting and where they cluster",
+        "Empirical approach: benchmark libraries, don't argue aesthetics",
+        "Survey strategy: two-pass (aggregate stats, then deep analysis on promising rules)",
+        "Stratified sampling: 8.6% is valid for detecting clusters"
+      ],
+      "notable_positions": [
+        "Survey should be prioritized (complete dataset before complex viz)",
+        "Interest score = distance from boring regions (edge of chaos)",
+        "Algorithmic hierarchy detection is necessary for research validity (compromised to manual for v0.1)"
+      ]
+    }
+  ],
+  "panel_dynamics": {
+    "productive_disagreements": [
+      "Tufte vs Victor on 2D vs 3D visualization (resolved: start 2D, defer 3D)",
+      "Rams vs Brooks on Home page inclusion (resolved: include, but lightweight)",
+      "Hickey vs Brooks on schema flexibility (resolved: simple with extension path)",
+      "Wolfram vs Tufte on hierarchy detection (resolved: manual MVP, algorithmic later)"
+    ],
+    "convergence_moments": [
+      "Unanimous on four-sprint v0.1 structure",
+      "Agreement on two-store schema (rules, collections)",
+      "Consensus on deferring interest scoring to v0.2",
+      "All endorsed empirical library benchmarking (Plotly vs Scatter-GL)"
+    ],
+    "tension_preservation": [
+      "2D vs 3D remains open for v0.2 (user feedback will decide)",
+      "Algorithmic hierarchy detection deferred but not rejected"
+    ]
+  }
+}

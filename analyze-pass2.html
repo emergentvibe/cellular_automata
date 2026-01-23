@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cells - Pass 2 Analysis</title>
   <link rel="stylesheet" href="shared/styles.css">
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="shared/db.js"></script>
   <script src="shared/nav.js"></script>
   <style>
     body { padding: 1.5rem; padding-top: 4.5rem; }
@@ -219,6 +221,42 @@
     let gpuAvailable = false;
 
     const logEl = document.getElementById('log');
+
+    // ============================================
+    // INDEXEDDB INTEGRATION
+    // ============================================
+    async function loadFromIndexedDB() {
+      try {
+        const rules = await CellsDB.getAllRules();
+        if (rules && rules.length > 0) {
+          // Convert IndexedDB format to pass1 format
+          pass1Data = rules.map(r => ({
+            rule_id: r.ruleId,
+            rule_string: r.ruleString || CellsDB.ruleIdToNotation(r.ruleId),
+            lambda: r.lambda,
+            D: r.dimension,
+            gamma: r.gamma,
+            classification: r.classification,
+            period: r.period,
+            pop_final: r.population,
+            pop_peak: r.pop_peak,
+            has_B0: (Math.floor(r.ruleId / 512) & 1) ? 1 : 0,
+            // Additional fields
+            lambda_std: r.lambda_std,
+            pop_mean: r.pop_mean,
+            activity_mean: r.activity_mean
+          }));
+          log(`Loaded ${pass1Data.length} rules from IndexedDB`, 'success');
+          document.getElementById('load-status').textContent = `Loaded ${pass1Data.length} rules from DB`;
+          applyFilter();
+          return true;
+        }
+        return false;
+      } catch (e) {
+        log('IndexedDB load failed: ' + e.message, 'warning');
+        return false;
+      }
+    }
 
     function log(msg, type = 'info') {
       const entry = document.createElement('div');
@@ -1049,8 +1087,15 @@
     });
 
     // Initialize
-    initWebGPU();
-    log('Pass 2 analyzer ready', 'success');
+    (async () => {
+      await initWebGPU();
+      // Try loading from IndexedDB first
+      const loaded = await loadFromIndexedDB();
+      if (!loaded) {
+        log('No data in IndexedDB. Load from localStorage or import CSV.', 'info');
+      }
+      log('Pass 2 analyzer ready', 'success');
+    })();
   </script>
 </body>
 </html>

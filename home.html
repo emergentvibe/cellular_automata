@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cells - Exploring Rule Space</title>
+  <link rel="stylesheet" href="shared/styles.css">
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/nav.js"></script>
+  <style>
+    body {
+      padding: 2rem;
+      padding-top: 5rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      color: #7a4a7a;
+      margin-bottom: 0.5rem;
+    }
+    .hero .tagline {
+      font-size: 1rem;
+      color: #555;
+      font-style: italic;
+    }
+
+    .question {
+      background: linear-gradient(135deg, #1a1a2a 0%, #111 100%);
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .question h2 {
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: #9a7a9a;
+      margin-bottom: 1rem;
+    }
+    .question p {
+      color: #777;
+      line-height: 1.8;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .stat-card .value {
+      font-size: 2rem;
+      color: #7a4a7a;
+      margin-bottom: 0.25rem;
+    }
+    .stat-card .label {
+      font-size: 0.75rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .stat-card .sublabel {
+      font-size: 0.7rem;
+      color: #444;
+      margin-top: 0.25rem;
+    }
+
+    .section {
+      margin-bottom: 2.5rem;
+    }
+    .section h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #555;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #222;
+    }
+    .section p {
+      color: #777;
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+
+    .hierarchy {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin: 1.5rem 0;
+    }
+    .level {
+      flex: 1;
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 4px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .level .num {
+      font-size: 1.5rem;
+      color: #4a4a6a;
+      margin-bottom: 0.25rem;
+    }
+    .level .name {
+      font-size: 0.7rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .level .example {
+      font-size: 0.65rem;
+      color: #444;
+      margin-top: 0.5rem;
+    }
+    .level.highlight {
+      border-color: #4a4a7a;
+      background: #0d0d1a;
+    }
+    .level.highlight .num {
+      color: #7a7aaa;
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+    .actions a {
+      display: inline-block;
+      padding: 0.8rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.15s ease;
+    }
+    .actions .primary {
+      background: #2a1a2a;
+      border: 1px solid #4a2a4a;
+      color: #9a6a9a;
+    }
+    .actions .primary:hover {
+      background: #3a223a;
+      border-color: #5a3a5a;
+    }
+    .actions .secondary {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+    }
+    .actions .secondary:hover {
+      background: #222;
+      color: #aaa;
+    }
+
+    .footnote {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #444;
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #1a1a1a;
+    }
+    .footnote a {
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>CELLS</h1>
+      <p class="tagline">Exploring the space of cellular automata rules</p>
+    </div>
+
+    <div class="question">
+      <h2>What makes a universe fertile for complexity?</h2>
+      <p>
+        Conway's Game of Life is famous for producing gliders, spaceships, and even universal computers
+        from simple rules. But Life is just one of 262,144 possible "Life-like" rules.
+        Which others can support emergent complexity? Where do they cluster in rule space?
+      </p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="value" id="stat-total">262,144</div>
+        <div class="label">Total Rules</div>
+        <div class="sublabel">Life-like CA (B/S notation)</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-surveyed">--</div>
+        <div class="label">Surveyed</div>
+        <div class="sublabel" id="stat-coverage">Loading...</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-interesting">?</div>
+        <div class="label">Interesting</div>
+        <div class="sublabel">Rules worth exploring</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>The Hierarchy of Emergence</h3>
+      <p>
+        We measure rules by what structures they can support. Most rules either die out or explode chaotically.
+        A few, like Life (B3/S23), sit at the "edge of chaos" and spontaneously produce higher-order structures.
+      </p>
+      <div class="hierarchy">
+        <div class="level">
+          <div class="num">0</div>
+          <div class="name">Cells</div>
+          <div class="example">Individual pixels</div>
+        </div>
+        <div class="level">
+          <div class="num">1</div>
+          <div class="name">Still Lifes</div>
+          <div class="example">Blocks, beehives</div>
+        </div>
+        <div class="level highlight">
+          <div class="num">2</div>
+          <div class="name">Gliders</div>
+          <div class="example">Moving patterns</div>
+        </div>
+        <div class="level">
+          <div class="num">3</div>
+          <div class="name">Guns</div>
+          <div class="example">Glider factories</div>
+        </div>
+        <div class="level">
+          <div class="num">4+</div>
+          <div class="name">Computers</div>
+          <div class="example">Universal machines</div>
+        </div>
+      </div>
+      <p>
+        We're searching for rules that spontaneously reach Level 2 (gliders) without engineering.
+        These rules might be "fertile" — capable of supporting even higher complexity.
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>How We Measure</h3>
+      <p>
+        Each rule is measured across multiple trials with random initial conditions:
+      </p>
+      <p>
+        <strong>λ (Lambda)</strong> — Damage spreading. Drop a perturbation and measure how it propagates.
+        λ ≈ 0 means damage heals; λ > 0 means chaos; interesting rules sit near the boundary.
+      </p>
+      <p>
+        <strong>D (Dimension)</strong> — Fractal dimension of the final pattern.
+        D ≈ 1 means lines/filaments; D ≈ 2 means solid blobs.
+      </p>
+      <p>
+        <strong>γ (Gamma)</strong> — Complexity growth rate.
+        Does the pattern settle, oscillate, or keep growing in complexity?
+      </p>
+    </div>
+
+    <div class="actions">
+      <a href="atlas.html" class="primary">Explore the Atlas</a>
+      <a href="detail.html" class="secondary">Try a Rule</a>
+      <a href="survey-gpu.html" class="secondary">Run Survey</a>
+    </div>
+
+    <div class="footnote">
+      Built by <a href="https://emergentvibe.com">@emergentvibe</a> ·
+      <a href="https://github.com/emergentvibe/cells">Source</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadStats() {
+      try {
+        const stats = await CellsDB.getStats();
+        document.getElementById('stat-surveyed').textContent = stats.count.toLocaleString();
+        document.getElementById('stat-coverage').textContent = `${stats.percentage}% coverage`;
+
+        // Count "interesting" rules (chaotic with good D)
+        const rules = await CellsDB.getAllRules();
+        const interesting = rules.filter(r =>
+          r.classification === 'chaotic' || r.classification === 'aperiodic'
+        ).length;
+        document.getElementById('stat-interesting').textContent = interesting.toLocaleString();
+      } catch (e) {
+        document.getElementById('stat-surveyed').textContent = '0';
+        document.getElementById('stat-coverage').textContent = 'No data yet';
+      }
+    }
+    loadStats();
+  </script>
+</body>
+</html>

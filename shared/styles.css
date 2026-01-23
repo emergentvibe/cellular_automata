@@ -101,6 +101,38 @@ body {
   opacity: 0.6;
 }
 
+/* Database status indicator */
+.site-nav .nav-db-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  padding: 0.3rem 0.6rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.site-nav .nav-db-status:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.site-nav .nav-db-status .db-icon {
+  font-size: 0.5rem;
+  color: #555;
+}
+
+.site-nav .nav-db-status.db-online .db-icon {
+  color: var(--accent-green);
+}
+
+.site-nav .nav-db-status.db-offline .db-icon {
+  color: #4a3a3a;
+}
+
 /* Common panel styles */
 .panel {
   background: var(--bg-secondary);

@@ -1,0 +1,184 @@
+{
+  "recommendations": [
+    {
+      "id": "R1",
+      "title": "Adopt Four-Sprint v0.1 Plan",
+      "confidence": "high",
+      "summary": "Complete v0.1 in 6-8 weeks across four sprints: Data Foundation → Atlas+Home → Detail → Lab",
+      "rationale": "Each sprint delivers independent user value. Progressive disclosure: context → explore → deep-dive → contribute.",
+      "conditions": [
+        "Sprint 1 must complete before Sprint 2 (Atlas depends on data layer)",
+        "Home page can be drafted in parallel with Sprint 1"
+      ],
+      "experts": ["Brooks", "Rams", "Tufte"],
+      "details": {
+        "sprint_1": "Data Foundation (1-2 weeks): IndexedDB schema, CSV migration, query API, tests",
+        "sprint_2": "Exploration UI (2 weeks): Atlas 2D scatter + Home page markdown",
+        "sprint_3": "Deep Dive (1-2 weeks): Detail page with animation + metrics + notes",
+        "sprint_4": "Survey Growth (1-2 weeks): Resumable Lab + progress tracking"
+      }
+    },
+    {
+      "id": "R2",
+      "title": "Use Specified IndexedDB Schema",
+      "confidence": "high",
+      "summary": "Two stores: 'rules' (ruleId primary key, indexed on lambda/dimension/gamma/classification) and 'collections' (auto-increment id)",
+      "rationale": "Simple, query-efficient, extensible for future topology support. Dexie can efficiently filter on indexed fields.",
+      "conditions": [
+        "Migration must batch insert (1000 records at a time) to avoid memory issues",
+        "Add 'topology' field in Sprint 8 without migration (defaults to 'flat-torus')"
+      ],
+      "experts": ["Hickey", "Liskov", "Brooks"],
+      "details": {
+        "stores": "rules: 'ruleId, lambda, dimension, gamma, classification'; collections: '++id, name'",
+        "rule_fields": "ruleId, birth[], survival[], lambda, dimension, gamma, period, classification, measured_at, notes",
+        "collection_fields": "id, name, ruleIds[], created_at"
+      }
+    },
+    {
+      "id": "R3",
+      "title": "Start with 2D Atlas, Defer 3D",
+      "confidence": "high",
+      "summary": "Atlas MVP: 2D scatter (lambda x-axis, dimension y-axis), colored by gamma, sized by period. Interactive hover/click.",
+      "rationale": "2D is easier to implement, performs better, and uses color for third dimension. 3D adds complexity without proven value in v0.1.",
+      "conditions": [
+        "Revisit 3D in v0.2 if user testing shows demand",
+        "Use diverging colormap for gamma (blue=negative, white=zero, red=positive)"
+      ],
+      "experts": ["Tufte", "Wolfram", "Rams"],
+      "details": {
+        "axes": "x=lambda, y=dimension",
+        "color": "gamma (diverging colormap)",
+        "size": "period (larger = longer)",
+        "interaction": "hover tooltip (rule notation + metrics), click to Detail"
+      }
+    },
+    {
+      "id": "R4",
+      "title": "Defer Interest Scoring to v0.2",
+      "confidence": "medium",
+      "summary": "No single 'interest score' in v0.1. Users explore (lambda, D, gamma) space visually with filters. Manual Collections for favorites.",
+      "rationale": "Interest is subjective. Visual exploration reveals patterns better than premature quantification. Let usage inform scoring algorithm.",
+      "conditions": [
+        "Provide range sliders for lambda, D, gamma to isolate regions",
+        "In v0.2, consider user-adjustable formula (weighted distance from boring regions)"
+      ],
+      "experts": ["Wolfram", "Hickey", "Tufte"],
+      "details": {
+        "v01_approach": "Visual exploration + manual filters",
+        "v02_approach": "Algorithmic scoring with user-adjustable weights"
+      }
+    },
+    {
+      "id": "R5",
+      "title": "Hierarchy Detection MVP = Period + Notes",
+      "confidence": "high",
+      "summary": "Sprint 3: Display detected period (already measured). Add free-text notes field for manual annotation. Defer algorithmic detection to Sprint 5.",
+      "rationale": "Manual annotation is honest (doesn't promise AI that doesn't exist) and cheap to implement. Discovers what users want to track before structuring it.",
+      "conditions": [
+        "Notes field is editable and saved to IndexedDB per rule",
+        "Sprint 5+ can add algorithmic still life, oscillator, spaceship detection"
+      ],
+      "experts": ["Brooks", "Tufte", "Rams"],
+      "details": {
+        "sprint_3": "period (computed) + notes (free-text, editable)",
+        "sprint_5_plus": "algorithmic still life detection, oscillator catalog, spaceship detection"
+      }
+    },
+    {
+      "id": "R6",
+      "title": "Visualization Library Spike",
+      "confidence": "medium",
+      "summary": "Sprint 2: Benchmark Plotly.js (scattergl) vs Scatter-GL with 262k points. Choose based on render time, interaction responsiveness, API ease.",
+      "rationale": "Both libraries are viable. Empirical performance test determines winner. Default to Plotly if performance is comparable (maturity advantage).",
+      "conditions": [
+        "Test with full 262k dataset (load synthetic data if survey incomplete)",
+        "Measure: initial render time, pan/zoom lag, hover latency, bundle size"
+      ],
+      "experts": ["Wolfram", "Brooks"],
+      "details": {
+        "plotly_pros": "Mature, declarative, handles ~1M points",
+        "plotly_cons": "Large bundle (~3MB), not purpose-built for exploration",
+        "scatter_gl_pros": "Purpose-built for embedding exploration (Google TensorFlow Projector), smaller bundle",
+        "scatter_gl_cons": "Less mature, fewer chart types"
+      }
+    },
+    {
+      "id": "R7",
+      "title": "Communicate Incomplete Data Clearly",
+      "confidence": "high",
+      "summary": "Display coverage percentage prominently. Show only surveyed rules in Atlas. Add tooltip about sparse sampling. In Sprint 4, add ghost points for unsurveyed rules.",
+      "rationale": "Transparency prevents misleading users. 8.6% coverage is sufficient to see structure, but must be labeled honestly.",
+      "conditions": [
+        "Atlas Sprint 2: Show '22,590 / 262,144 rules surveyed (8.6%)'",
+        "Lab Sprint 4: Progress bar + ability to prioritize regions"
+      ],
+      "experts": ["Tufte", "Wolfram"],
+      "details": {
+        "sprint_2_atlas": "Coverage display + tooltip warning about sparse sample",
+        "sprint_4_lab": "Progress tracking + queue management",
+        "sprint_4_atlas": "Ghost points (greyed out) for unsurveyed rules, clickable to add to queue"
+      }
+    },
+    {
+      "id": "R8",
+      "title": "Reorder Original Sprint Plan",
+      "confidence": "high",
+      "summary": "Revised order: Data → Atlas+Home → Detail → Lab → Hierarchy+Collections → 3D/Polish → Topology. Key changes: Home earlier (Sprint 2), Lab later (Sprint 4), 3D deferred.",
+      "rationale": "Users need context before exploration (Home in Sprint 2). Atlas must exist before Lab to motivate survey completion. 3D is speculative, defer until proven need.",
+      "conditions": [
+        "Stop and ship after Sprint 4 (v0.1 complete)",
+        "Sprints 5+ are v0.2, prioritized based on v0.1 user feedback"
+      ],
+      "experts": ["Brooks", "Victor", "Rams"],
+      "details": {
+        "original_order": "IndexedDB → Atlas → Home+Detail → Lab → Hierarchy → Collections → Polish → Topology",
+        "revised_order": "Data → Atlas+Home → Detail → Lab → Hierarchy+Collections → 3D+Polish → Topology",
+        "key_changes": [
+          "Home moved from Sprint 3 to Sprint 2 (context first)",
+          "Lab moved from Sprint 3 to Sprint 4 (after exploration motivates contribution)",
+          "3D deferred from Sprint 2 to Sprint 6+ (start 2D)",
+          "Collections deferred to Sprint 5 (not critical for v0.1)"
+        ]
+      }
+    },
+    {
+      "id": "R9",
+      "title": "v0.1 Success Criteria: Four User Flows",
+      "confidence": "high",
+      "summary": "Ship when: (1) Home explains research, (2) Atlas lets me explore visually, (3) Detail lets me deep-dive any rule, (4) Lab lets me resume survey. Nothing else.",
+      "rationale": "Conceptual integrity = focused scope. Collections, Compare, 3D, hierarchy detection, topology are v0.2. Validate core flows first.",
+      "conditions": [
+        "All four flows must work end-to-end",
+        "Performance acceptable (Atlas responsive with 22k+ points)",
+        "Home page clearly explains research question"
+      ],
+      "experts": ["Brooks", "Rams"],
+      "details": {
+        "user_flow_1": "Read about research, understand question (Home)",
+        "user_flow_2": "Explore 22k+ rules visually (Atlas)",
+        "user_flow_3": "Deep-dive any rule (Detail)",
+        "user_flow_4": "Resume survey to grow dataset (Lab)",
+        "excluded_from_v01": "Collections, Compare, Hierarchy (beyond period), 3D, Topology"
+      }
+    },
+    {
+      "id": "R10",
+      "title": "CSV to IndexedDB Migration Strategy",
+      "confidence": "high",
+      "summary": "Sprint 1: One-time migration script. Parse CSV, batch insert 1000 records at a time using Dexie bulkAdd(). Verify count and spot-check rules.",
+      "rationale": "Existing 22,590 rules must move to IndexedDB. Batch insert avoids memory issues. Post-migration, IndexedDB is source of truth (survey writes directly).",
+      "conditions": [
+        "Keep CSV export as backup option (File → Export CSV)",
+        "Migration must be idempotent (safe to re-run)",
+        "Verify B3/S23 exists with correct metrics after migration"
+      ],
+      "experts": ["Hickey", "Brooks"],
+      "details": {
+        "approach": "Parse CSV (Papa Parse) → batch insert (bulkAdd 1000 at a time) → verify",
+        "post_migration": "Survey runner writes to IndexedDB directly, no CSV intermediate",
+        "backup": "Provide 'Export to CSV' option in UI for data portability"
+      }
+    }
+  ]
+}
