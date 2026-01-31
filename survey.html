@@ -399,8 +399,16 @@
               <div class="stat-value" id="stat-completed">0</div>
             </div>
             <div class="stat-item">
+              <div class="stat-label">This Session</div>
+              <div class="stat-value" id="stat-session" style="color: #6a9a6a;">0</div>
+            </div>
+            <div class="stat-item">
               <div class="stat-label">Remaining</div>
               <div class="stat-value" id="stat-remaining">262,144</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">From DB</div>
+              <div class="stat-value small" id="stat-from-db">0</div>
             </div>
             <div class="stat-item">
               <div class="stat-label">Avg Lambda</div>
@@ -592,6 +600,9 @@
     let batchSize = 10;
     let autosaveInterval = 1000;
 
+    // Track initial DB count for "from database" vs "this session" display
+    let initialDbCount = 0;
+
     // ============================================
     // INDEXEDDB INTEGRATION
     // ============================================
@@ -599,6 +610,7 @@
       try {
         const surveyedIds = await CellsDB.getSurveyedRuleIds();
         surveyedIds.forEach(id => completedSet.add(id));
+        initialDbCount = completedSet.size; // Store initial count
         log(`Loaded ${completedSet.size} rules from IndexedDB`, 'info');
         updateProgress();
         if (window.updateNavDbStatus) window.updateNavDbStatus();
@@ -1980,7 +1992,9 @@
       etaEl.textContent = `ETA: ${rate > 0 ? formatTime(eta) : '--:--:--'}`;
 
       document.getElementById('stat-completed').textContent = completed.toLocaleString();
+      document.getElementById('stat-session').textContent = rulesThisSession.toLocaleString();
       document.getElementById('stat-remaining').textContent = remaining.toLocaleString();
+      document.getElementById('stat-from-db').textContent = initialDbCount.toLocaleString();
 
       // Aggregate statistics
       const counts = { extinct: 0, fixed: 0, periodic: 0, aperiodic: 0 };

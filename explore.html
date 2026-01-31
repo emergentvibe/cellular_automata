@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cells - Explore</title>
+  <link rel="stylesheet" href="shared/styles.css">
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/nav.js"></script>
+  <style>
+    body {
+      padding: 1rem;
+      padding-top: 4rem;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      color: #7a4a7a;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      margin: 0;
+    }
+    .coverage-badge {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.7rem;
+      color: #666;
+    }
+    .coverage-badge .count {
+      color: #7a4a7a;
+    }
+
+    /* Main layout: two columns */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1rem;
+      height: calc(100vh - 7rem);
+    }
+    @media (max-width: 1000px) {
+      .main-grid { grid-template-columns: 1fr; height: auto; }
+    }
+
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 1rem;
+    }
+    .panel-title {
+      color: #555;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-title .count {
+      color: #666;
+      font-weight: normal;
+    }
+
+    /* Left column: Scatter + Filters */
+    .left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 0;
+    }
+
+    /* Filters row */
+    .filters-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .filter-group label {
+      font-size: 0.6rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .filter-group select {
+      background: #0d0d0d;
+      border: 1px solid #222;
+      color: #888;
+      padding: 0.35rem 0.5rem;
+      font-family: inherit;
+      font-size: 0.7rem;
+      border-radius: 3px;
+    }
+
+    /* Range sliders */
+    .range-group {
+      flex: 1;
+      min-width: 140px;
+    }
+    .range-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6rem;
+      color: #555;
+      margin-bottom: 0.25rem;
+    }
+    .range-track {
+      position: relative;
+      height: 16px;
+    }
+    .range-track-bg {
+      position: absolute;
+      top: 6px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 2px;
+    }
+    .range-track-fill {
+      position: absolute;
+      top: 6px;
+      height: 4px;
+      background: #4a2a4a;
+      border-radius: 2px;
+    }
+    .range-slider {
+      position: absolute;
+      width: 100%;
+      height: 16px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      pointer-events: none;
+    }
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      background: #6a3a6a;
+      border: 1px solid #8a5a8a;
+      border-radius: 50%;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    .range-slider::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      background: #6a3a6a;
+      border: 1px solid #8a5a8a;
+      border-radius: 50%;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    button {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #888;
+      padding: 0.35rem 0.7rem;
+      font-family: inherit;
+      font-size: 0.65rem;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    button:hover { background: #222; color: #aaa; }
+    button.primary { background: #1a2a1a; border-color: #2a4a2a; color: #6a9a6a; }
+
+    /* Scatter plot */
+    .scatter-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .scatter-container {
+      flex: 1;
+      position: relative;
+      background: #0a0a0a;
+      border: 1px solid #1a1a1a;
+      border-radius: 3px;
+      min-height: 300px;
+    }
+    #scatter-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .scatter-tooltip {
+      position: absolute;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.65rem;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+      border-radius: 3px;
+    }
+    .selection-rect {
+      position: absolute;
+      border: 1px solid #6a9a6a;
+      background: rgba(106, 154, 106, 0.1);
+      pointer-events: none;
+      display: none;
+    }
+    .scatter-hint {
+      font-size: 0.55rem;
+      color: #444;
+      margin-top: 0.25rem;
+    }
+    .scatter-axes {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.6rem;
+      color: #444;
+    }
+    .legend {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      font-size: 0.6rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: #555;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    /* Right column */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 0;
+    }
+
+    /* Gallery */
+    .gallery-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .gallery-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .gallery-controls select {
+      background: #0d0d0d;
+      border: 1px solid #222;
+      color: #888;
+      padding: 0.25rem 0.4rem;
+      font-family: inherit;
+      font-size: 0.6rem;
+      border-radius: 3px;
+    }
+    .gallery-controls label {
+      font-size: 0.55rem;
+      color: #555;
+      text-transform: uppercase;
+    }
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-left: auto;
+    }
+    .pagination button {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.6rem;
+      min-width: 24px;
+    }
+    .pagination button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .pagination .page-info {
+      font-size: 0.6rem;
+      color: #555;
+      padding: 0 0.3rem;
+    }
+    .gallery {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      overflow-y: auto;
+      padding: 0.5rem;
+      background: #0a0a0a;
+      border: 1px solid #1a1a1a;
+      border-radius: 3px;
+      min-height: 200px;
+    }
+    .gallery-item {
+      aspect-ratio: 1;
+      background: #111;
+      border: 1px solid #1a1a1a;
+      border-radius: 2px;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+    }
+    .gallery-item:hover {
+      border-color: #3a5a3a;
+    }
+    .gallery-item.selected {
+      border-color: #6a9a6a;
+      border-width: 2px;
+    }
+    .gallery-item canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+    .gallery-item .label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.8);
+      font-size: 0.5rem;
+      color: #666;
+      padding: 0.15rem;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Selected rule preview */
+    .preview-panel {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 3px;
+      padding: 0.75rem;
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .preview-canvas {
+      width: 80px;
+      height: 80px;
+      background: #050505;
+      border: 1px solid #222;
+      image-rendering: pixelated;
+    }
+    .preview-info {
+      flex: 1;
+    }
+    .preview-title {
+      font-size: 0.85rem;
+      color: #7a9a7a;
+      margin-bottom: 0.25rem;
+    }
+    .preview-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.2rem 0.5rem;
+      font-size: 0.6rem;
+    }
+    .preview-metric {
+      display: flex;
+      justify-content: space-between;
+    }
+    .preview-metric .label { color: #444; }
+    .preview-metric .value { color: #777; }
+    .preview-actions {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #1a1a1a;
+    }
+    .preview-actions a {
+      display: inline-block;
+      padding: 0.35rem 0.7rem;
+      background: #1a2a1a;
+      border: 1px solid #2a4a2a;
+      color: #6a9a6a;
+      text-decoration: none;
+      font-size: 0.65rem;
+      border-radius: 3px;
+    }
+    .preview-actions a:hover {
+      background: #2a3a2a;
+    }
+
+    .empty-state {
+      color: #444;
+      font-size: 0.7rem;
+      text-align: center;
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>EXPLORE</h1>
+    <div class="coverage-badge">
+      <span class="count" id="coverage-count">--</span> / 262,144 rules surveyed
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Left: Scatter + Filters -->
+    <div class="left-col">
+      <div class="panel" style="padding: 0.75rem;">
+        <div class="filters-row">
+          <div class="filter-group">
+            <label>Classification</label>
+            <select id="filter-class">
+              <option value="all" selected>All</option>
+              <option value="aperiodic">Aperiodic</option>
+              <option value="periodic">Periodic</option>
+              <option value="fixed">Fixed</option>
+              <option value="extinct">Extinct</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>X Axis</label>
+            <select id="x-axis">
+              <option value="lambda" selected>Lambda (λ)</option>
+              <option value="D">Dimension (D)</option>
+              <option value="gamma">Gamma (γ)</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Y Axis</label>
+            <select id="y-axis">
+              <option value="lambda">Lambda (λ)</option>
+              <option value="D" selected>Dimension (D)</option>
+              <option value="gamma">Gamma (γ)</option>
+            </select>
+          </div>
+          <div class="range-group">
+            <div class="range-header">
+              <span>Lambda (λ)</span>
+              <span id="lambda-range-text">all</span>
+            </div>
+            <div class="range-track">
+              <div class="range-track-bg"></div>
+              <div class="range-track-fill" id="lambda-fill"></div>
+              <input type="range" class="range-slider" id="lambda-min" min="0" max="100" value="0">
+              <input type="range" class="range-slider" id="lambda-max" min="0" max="100" value="100">
+            </div>
+          </div>
+          <div class="range-group">
+            <div class="range-header">
+              <span>Dimension (D)</span>
+              <span id="d-range-text">all</span>
+            </div>
+            <div class="range-track">
+              <div class="range-track-bg"></div>
+              <div class="range-track-fill" id="d-fill"></div>
+              <input type="range" class="range-slider" id="d-min" min="0" max="100" value="0">
+              <input type="range" class="range-slider" id="d-max" min="0" max="100" value="100">
+            </div>
+          </div>
+          <button id="btn-reset">Reset</button>
+        </div>
+      </div>
+
+      <div class="scatter-panel panel">
+        <div class="panel-title">
+          <span>Scatter Plot</span>
+          <span class="count" id="filtered-count">0 rules</span>
+        </div>
+        <div class="scatter-container">
+          <canvas id="scatter-canvas"></canvas>
+          <div class="scatter-tooltip" id="scatter-tooltip"></div>
+          <div class="selection-rect" id="selection-rect"></div>
+        </div>
+        <div class="scatter-hint">Click to select • Drag to zoom • Right-click to reset zoom</div>
+        <div class="legend" id="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#4a7a4a"></div>Aperiodic</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#7a7a4a"></div>Periodic</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#4a7a7a"></div>Fixed</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#4a4a4a"></div>Extinct</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Gallery + Preview -->
+    <div class="right-col">
+      <div class="gallery-panel panel">
+        <div class="panel-title">
+          <span>Gallery</span>
+          <span class="count" id="gallery-count">0 shown</span>
+        </div>
+        <div class="gallery-controls">
+          <label>Sort:</label>
+          <select id="sort-by">
+            <option value="rule_id">Rule ID</option>
+            <option value="lambda">Lambda (λ)</option>
+            <option value="D">Dimension (D)</option>
+            <option value="gamma">Gamma (γ)</option>
+            <option value="classification">Classification</option>
+          </select>
+          <select id="sort-dir">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+          <div class="pagination">
+            <button id="page-first" title="First page">««</button>
+            <button id="page-prev" title="Previous page">«</button>
+            <span class="page-info" id="page-info">1 / 1</span>
+            <button id="page-next" title="Next page">»</button>
+            <button id="page-last" title="Last page">»»</button>
+          </div>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+
+      <div class="panel" style="padding: 0;">
+        <div class="preview-panel" id="preview-panel">
+          <div class="empty-state" id="preview-empty">Click a rule to see details</div>
+          <div id="preview-content" style="display: none;">
+            <div class="preview-header">
+              <canvas id="preview-canvas" class="preview-canvas" width="80" height="80"></canvas>
+              <div class="preview-info">
+                <div class="preview-title" id="preview-title">--</div>
+                <div class="preview-metrics">
+                  <div class="preview-metric"><span class="label">ID</span><span class="value" id="preview-id">--</span></div>
+                  <div class="preview-metric"><span class="label">Class</span><span class="value" id="preview-class">--</span></div>
+                  <div class="preview-metric"><span class="label">λ</span><span class="value" id="preview-lambda">--</span></div>
+                  <div class="preview-metric"><span class="label">D</span><span class="value" id="preview-d">--</span></div>
+                  <div class="preview-metric"><span class="label">γ</span><span class="value" id="preview-gamma">--</span></div>
+                  <div class="preview-metric"><span class="label">Period</span><span class="value" id="preview-period">--</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="preview-actions">
+              <a href="#" id="preview-link">Open in Lab</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // STATE
+    // ============================================
+    let allData = [];
+    let filteredData = [];
+    let selectedRule = null;
+
+    // Data ranges (computed from loaded data)
+    let dataRanges = {
+      lambda: { min: -1, max: 1 },
+      D: { min: 0, max: 2 },
+      gamma: { min: 0, max: 10000 }
+    };
+
+    // Drag state for scatter plot
+    let isDragging = false;
+    let dragStart = null;
+
+    // Current filter values
+    let rangeFilters = {
+      lambda: { min: -Infinity, max: Infinity },
+      D: { min: 0, max: 2 },
+      gamma: { min: 0, max: Infinity }
+    };
+
+    const classColors = {
+      aperiodic: '#4a7a4a',
+      periodic: '#7a7a4a',
+      fixed: '#4a7a7a',
+      extinct: '#4a4a4a'
+    };
+
+    // DOM
+    const scatterCanvas = document.getElementById('scatter-canvas');
+    const scatterCtx = scatterCanvas.getContext('2d');
+    const tooltip = document.getElementById('scatter-tooltip');
+    const gallery = document.getElementById('gallery');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+
+    // ============================================
+    // DATA LOADING
+    // ============================================
+    async function loadData() {
+      try {
+        const stats = await CellsDB.getStats();
+        document.getElementById('coverage-count').textContent = stats.count.toLocaleString();
+
+        const rules = await CellsDB.getAllRules();
+        if (rules && rules.length > 0) {
+          allData = rules.map(r => ({
+            rule_id: r.ruleId,
+            rule_string: r.ruleString || CellsDB.ruleIdToNotation(r.ruleId),
+            lambda: r.lambda,
+            D: r.dimension,
+            gamma: r.gamma,
+            classification: r.classification,
+            period: r.period,
+            population: r.population
+          }));
+          computeDataRanges();
+          applyFilters();
+        }
+      } catch (e) {
+        console.error('Load failed:', e);
+      }
+    }
+
+    function computeDataRanges() {
+      if (allData.length === 0) return;
+
+      const lambdaVals = allData.map(r => r.lambda).filter(v => v !== undefined && v > -10);
+      const dVals = allData.map(r => r.D).filter(v => v !== undefined);
+      const gammaVals = allData.map(r => r.gamma).filter(v => v !== undefined);
+
+      if (lambdaVals.length > 0) {
+        dataRanges.lambda.min = lambdaVals.reduce((a, b) => Math.min(a, b), Infinity);
+        dataRanges.lambda.max = lambdaVals.reduce((a, b) => Math.max(a, b), -Infinity);
+      }
+      if (dVals.length > 0) {
+        dataRanges.D.min = dVals.reduce((a, b) => Math.min(a, b), Infinity);
+        dataRanges.D.max = dVals.reduce((a, b) => Math.max(a, b), -Infinity);
+      }
+      if (gammaVals.length > 0) {
+        dataRanges.gamma.min = gammaVals.reduce((a, b) => Math.min(a, b), Infinity);
+        dataRanges.gamma.max = gammaVals.reduce((a, b) => Math.max(a, b), -Infinity);
+      }
+
+      rangeFilters.lambda = { ...dataRanges.lambda };
+      rangeFilters.D = { ...dataRanges.D };
+      rangeFilters.gamma = { ...dataRanges.gamma };
+
+      updateRangeDisplays();
+    }
+
+    // ============================================
+    // FILTERING
+    // ============================================
+    function applyFilters() {
+      const classFilter = document.getElementById('filter-class').value;
+
+      filteredData = allData.filter(r => {
+        if (classFilter !== 'all' && r.classification !== classFilter) return false;
+
+        const lambda = r.lambda;
+        if (lambda !== undefined && lambda > -10) {
+          if (lambda < rangeFilters.lambda.min || lambda > rangeFilters.lambda.max) return false;
+        }
+
+        const D = r.D;
+        if (D !== undefined) {
+          if (D < rangeFilters.D.min || D > rangeFilters.D.max) return false;
+        }
+
+        return true;
+      });
+
+      document.getElementById('filtered-count').textContent = `${filteredData.length} rules`;
+      currentPage = 0; // Reset to first page when filters change
+      drawScatter();
+      renderGallery();
+    }
+
+    // ============================================
+    // RANGE SLIDERS
+    // ============================================
+    function sliderToValue(sliderVal, range) {
+      const t = sliderVal / 100;
+      return range.min + t * (range.max - range.min);
+    }
+
+    function valueToSlider(value, range) {
+      const rangeSize = range.max - range.min;
+      if (rangeSize === 0) return 50;
+      return ((value - range.min) / rangeSize) * 100;
+    }
+
+    function updateRangeDisplays() {
+      // Lambda
+      document.getElementById('lambda-min').value = valueToSlider(rangeFilters.lambda.min, dataRanges.lambda);
+      document.getElementById('lambda-max').value = valueToSlider(rangeFilters.lambda.max, dataRanges.lambda);
+      document.getElementById('lambda-range-text').textContent =
+        `${rangeFilters.lambda.min.toFixed(2)} to ${rangeFilters.lambda.max.toFixed(2)}`;
+      updateFill('lambda');
+
+      // D
+      document.getElementById('d-min').value = valueToSlider(rangeFilters.D.min, dataRanges.D);
+      document.getElementById('d-max').value = valueToSlider(rangeFilters.D.max, dataRanges.D);
+      document.getElementById('d-range-text').textContent =
+        `${rangeFilters.D.min.toFixed(2)} to ${rangeFilters.D.max.toFixed(2)}`;
+      updateFill('d');
+    }
+
+    function updateFill(prefix) {
+      const minSlider = document.getElementById(`${prefix}-min`);
+      const maxSlider = document.getElementById(`${prefix}-max`);
+      const fill = document.getElementById(`${prefix}-fill`);
+      const minVal = parseFloat(minSlider.value);
+      const maxVal = parseFloat(maxSlider.value);
+      fill.style.left = `${minVal}%`;
+      fill.style.width = `${maxVal - minVal}%`;
+    }
+
+    function setupRangeSliders() {
+      const configs = [
+        { prefix: 'lambda', key: 'lambda' },
+        { prefix: 'd', key: 'D' }
+      ];
+
+      for (const { prefix, key } of configs) {
+        const minSlider = document.getElementById(`${prefix}-min`);
+        const maxSlider = document.getElementById(`${prefix}-max`);
+        const rangeText = document.getElementById(`${prefix}-range-text`);
+
+        minSlider.addEventListener('input', () => {
+          if (parseFloat(minSlider.value) > parseFloat(maxSlider.value)) {
+            minSlider.value = maxSlider.value;
+          }
+          rangeFilters[key].min = sliderToValue(parseFloat(minSlider.value), dataRanges[key]);
+          rangeText.textContent = `${rangeFilters[key].min.toFixed(2)} to ${rangeFilters[key].max.toFixed(2)}`;
+          updateFill(prefix);
+        });
+
+        maxSlider.addEventListener('input', () => {
+          if (parseFloat(maxSlider.value) < parseFloat(minSlider.value)) {
+            maxSlider.value = minSlider.value;
+          }
+          rangeFilters[key].max = sliderToValue(parseFloat(maxSlider.value), dataRanges[key]);
+          rangeText.textContent = `${rangeFilters[key].min.toFixed(2)} to ${rangeFilters[key].max.toFixed(2)}`;
+          updateFill(prefix);
+        });
+
+        minSlider.addEventListener('change', applyFilters);
+        maxSlider.addEventListener('change', applyFilters);
+      }
+
+      document.getElementById('filter-class').addEventListener('change', applyFilters);
+      document.getElementById('x-axis').addEventListener('change', drawScatter);
+      document.getElementById('y-axis').addEventListener('change', drawScatter);
+
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        document.getElementById('filter-class').value = 'all';
+        rangeFilters.lambda = { ...dataRanges.lambda };
+        rangeFilters.D = { ...dataRanges.D };
+        updateRangeDisplays();
+        applyFilters();
+      });
+    }
+
+    // ============================================
+    // SCATTER PLOT
+    // ============================================
+    function drawScatter() {
+      const container = scatterCanvas.parentElement;
+      scatterCanvas.width = container.clientWidth;
+      scatterCanvas.height = container.clientHeight;
+
+      const xKey = document.getElementById('x-axis').value;
+      const yKey = document.getElementById('y-axis').value;
+
+      const w = scatterCanvas.width;
+      const h = scatterCanvas.height;
+      const margin = { top: 15, right: 15, bottom: 25, left: 35 };
+      const plotW = w - margin.left - margin.right;
+      const plotH = h - margin.top - margin.bottom;
+
+      scatterCtx.fillStyle = '#0a0a0a';
+      scatterCtx.fillRect(0, 0, w, h);
+
+      if (filteredData.length === 0) {
+        scatterCtx.fillStyle = '#444';
+        scatterCtx.font = '12px monospace';
+        scatterCtx.textAlign = 'center';
+        scatterCtx.fillText('No data - run Survey first', w/2, h/2);
+        return;
+      }
+
+      // Get ranges from filtered data
+      const xVals = filteredData.map(r => r[xKey]).filter(v => v !== undefined && v > -10);
+      const yVals = filteredData.map(r => r[yKey]).filter(v => v !== undefined && v > -10);
+      const xMin = xVals.reduce((a, b) => Math.min(a, b), Infinity);
+      const xMax = xVals.reduce((a, b) => Math.max(a, b), -Infinity);
+      const yMin = yVals.reduce((a, b) => Math.min(a, b), Infinity);
+      const yMax = yVals.reduce((a, b) => Math.max(a, b), -Infinity);
+
+      const xRange = xMax - xMin || 1;
+      const yRange = yMax - yMin || 1;
+
+      // Draw axes
+      scatterCtx.strokeStyle = '#222';
+      scatterCtx.lineWidth = 1;
+      scatterCtx.beginPath();
+      scatterCtx.moveTo(margin.left, margin.top);
+      scatterCtx.lineTo(margin.left, h - margin.bottom);
+      scatterCtx.lineTo(w - margin.right, h - margin.bottom);
+      scatterCtx.stroke();
+
+      // Axis labels with range values
+      scatterCtx.fillStyle = '#444';
+      scatterCtx.font = '9px monospace';
+      scatterCtx.textAlign = 'center';
+      scatterCtx.fillText(`${xKey} [${xMin.toFixed(2)} - ${xMax.toFixed(2)}]`, w / 2, h - 5);
+      scatterCtx.save();
+      scatterCtx.translate(10, h / 2);
+      scatterCtx.rotate(-Math.PI / 2);
+      scatterCtx.fillText(`${yKey} [${yMin.toFixed(2)} - ${yMax.toFixed(2)}]`, 0, 0);
+      scatterCtx.restore();
+
+      // Draw points (non-selected first, then selected on top)
+      for (const r of filteredData) {
+        if (selectedRule && r.rule_id === selectedRule.rule_id) continue; // Draw selected last
+        const x = r[xKey];
+        const y = r[yKey];
+        if (x === undefined || y === undefined || x < -10 || y < -10) continue;
+
+        const px = margin.left + ((x - xMin) / xRange) * plotW;
+        const py = h - margin.bottom - ((y - yMin) / yRange) * plotH;
+
+        scatterCtx.fillStyle = classColors[r.classification] || '#444';
+        scatterCtx.beginPath();
+        scatterCtx.arc(px, py, 2, 0, Math.PI * 2);
+        scatterCtx.fill();
+      }
+
+      // Draw selected point on top with highlight
+      if (selectedRule) {
+        const x = selectedRule[xKey];
+        const y = selectedRule[yKey];
+        if (x !== undefined && y !== undefined && x > -10 && y > -10) {
+          const px = margin.left + ((x - xMin) / xRange) * plotW;
+          const py = h - margin.bottom - ((y - yMin) / yRange) * plotH;
+
+          // Outer glow
+          scatterCtx.fillStyle = 'rgba(255, 255, 100, 0.3)';
+          scatterCtx.beginPath();
+          scatterCtx.arc(px, py, 8, 0, Math.PI * 2);
+          scatterCtx.fill();
+
+          // Inner highlight
+          scatterCtx.fillStyle = '#ffff66';
+          scatterCtx.strokeStyle = '#ffaa00';
+          scatterCtx.lineWidth = 2;
+          scatterCtx.beginPath();
+          scatterCtx.arc(px, py, 4, 0, Math.PI * 2);
+          scatterCtx.fill();
+          scatterCtx.stroke();
+        }
+      }
+
+      // Store for interaction
+      scatterCanvas._plotData = { xKey, yKey, xMin, xMax, yMin, yMax, xRange, yRange, margin, plotW, plotH };
+    }
+
+    // Scatter interaction
+    const selectionRect = document.getElementById('selection-rect');
+
+    function findClosestPoint(mx, my) {
+      if (!scatterCanvas._plotData || filteredData.length === 0) return null;
+      const { xKey, yKey, xMin, xRange, yMin, yRange, margin, plotW, plotH } = scatterCanvas._plotData;
+
+      let closest = null;
+      let minDist = 15;
+
+      for (const r of filteredData) {
+        const x = r[xKey];
+        const y = r[yKey];
+        if (x === undefined || y === undefined || x < -10 || y < -10) continue;
+
+        const px = margin.left + ((x - xMin) / xRange) * plotW;
+        const py = scatterCanvas.height - margin.bottom - ((y - yMin) / yRange) * plotH;
+        const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+
+        if (dist < minDist) {
+          minDist = dist;
+          closest = r;
+        }
+      }
+      return closest;
+    }
+
+    scatterCanvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return; // Left click only
+      const rect = scatterCanvas.getBoundingClientRect();
+      dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      isDragging = false;
+    });
+
+    scatterCanvas.addEventListener('mousemove', (e) => {
+      const rect = scatterCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      // Handle dragging for zoom
+      if (dragStart && e.buttons === 1) {
+        const dx = Math.abs(mx - dragStart.x);
+        const dy = Math.abs(my - dragStart.y);
+        if (dx > 5 || dy > 5) {
+          isDragging = true;
+          selectionRect.style.display = 'block';
+          selectionRect.style.left = Math.min(dragStart.x, mx) + 'px';
+          selectionRect.style.top = Math.min(dragStart.y, my) + 'px';
+          selectionRect.style.width = Math.abs(mx - dragStart.x) + 'px';
+          selectionRect.style.height = Math.abs(my - dragStart.y) + 'px';
+          tooltip.style.display = 'none';
+          return;
+        }
+      }
+
+      // Normal hover tooltip
+      const closest = findClosestPoint(mx, my);
+      if (closest) {
+        tooltip.style.display = 'block';
+        tooltip.style.left = (mx + 10) + 'px';
+        tooltip.style.top = (my - 10) + 'px';
+        tooltip.innerHTML = `<strong>${closest.rule_string}</strong><br>λ=${closest.lambda?.toFixed(3) || '--'} D=${closest.D?.toFixed(2) || '--'}`;
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    scatterCanvas.addEventListener('mouseup', (e) => {
+      selectionRect.style.display = 'none';
+
+      if (isDragging && dragStart && scatterCanvas._plotData) {
+        // Zoom to selection - update the actual filters
+        const rect = scatterCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const { xKey, yKey, xMin, xMax, yMin, yMax, xRange, yRange, margin, plotW, plotH } = scatterCanvas._plotData;
+
+        // Convert pixel coords to data coords
+        const x1 = xMin + ((Math.min(dragStart.x, mx) - margin.left) / plotW) * xRange;
+        const x2 = xMin + ((Math.max(dragStart.x, mx) - margin.left) / plotW) * xRange;
+        const y1 = yMax - ((Math.min(dragStart.y, my) - margin.top) / plotH) * yRange;
+        const y2 = yMax - ((Math.max(dragStart.y, my) - margin.top) / plotH) * yRange;
+
+        // Update the range filters based on what axes are shown
+        // This will filter the data and update both scatter and gallery
+        if (xKey === 'lambda') {
+          rangeFilters.lambda.min = Math.max(x1, dataRanges.lambda.min);
+          rangeFilters.lambda.max = Math.min(x2, dataRanges.lambda.max);
+        } else if (xKey === 'D') {
+          rangeFilters.D.min = Math.max(x1, dataRanges.D.min);
+          rangeFilters.D.max = Math.min(x2, dataRanges.D.max);
+        }
+
+        if (yKey === 'lambda') {
+          rangeFilters.lambda.min = Math.max(Math.min(y1, y2), dataRanges.lambda.min);
+          rangeFilters.lambda.max = Math.min(Math.max(y1, y2), dataRanges.lambda.max);
+        } else if (yKey === 'D') {
+          rangeFilters.D.min = Math.max(Math.min(y1, y2), dataRanges.D.min);
+          rangeFilters.D.max = Math.min(Math.max(y1, y2), dataRanges.D.max);
+        }
+
+        // Update the slider UI to reflect new filter values
+        updateRangeDisplays();
+
+        // Apply filters - this updates both scatter and gallery
+        applyFilters();
+      } else if (!isDragging && dragStart) {
+        // Simple click - select point
+        const rect = scatterCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const closest = findClosestPoint(mx, my);
+        if (closest) selectRule(closest);
+      }
+
+      dragStart = null;
+      isDragging = false;
+    });
+
+    scatterCanvas.addEventListener('dblclick', (e) => {
+      if (selectedRule) {
+        window.location.href = `lab.html?rule=${selectedRule.rule_id}`;
+      }
+    });
+
+    // Right-click to reset filters (zoom out)
+    scatterCanvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      // Reset range filters to full data range
+      rangeFilters.lambda = { ...dataRanges.lambda };
+      rangeFilters.D = { ...dataRanges.D };
+      updateRangeDisplays();
+      applyFilters();
+    });
+
+    scatterCanvas.addEventListener('mouseleave', () => {
+      tooltip.style.display = 'none';
+      if (isDragging) {
+        selectionRect.style.display = 'none';
+        isDragging = false;
+        dragStart = null;
+      }
+    });
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+      drawScatter();
+    });
+
+    // ============================================
+    // GALLERY
+    // ============================================
+    const ITEMS_PER_PAGE = 48;
+    const THUMB_SIZE = 50;
+    let currentPage = 0;
+    let sortedData = [];
+
+    function sortData() {
+      const sortBy = document.getElementById('sort-by').value;
+      const sortDir = document.getElementById('sort-dir').value;
+
+      sortedData = [...filteredData].sort((a, b) => {
+        let aVal = a[sortBy];
+        let bVal = b[sortBy];
+
+        // Handle undefined/null
+        if (aVal === undefined || aVal === null) aVal = sortDir === 'asc' ? Infinity : -Infinity;
+        if (bVal === undefined || bVal === null) bVal = sortDir === 'asc' ? Infinity : -Infinity;
+
+        // String comparison for classification
+        if (sortBy === 'classification') {
+          aVal = aVal || '';
+          bVal = bVal || '';
+          return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+
+        // Numeric comparison
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      });
+    }
+
+    function getTotalPages() {
+      return Math.max(1, Math.ceil(sortedData.length / ITEMS_PER_PAGE));
+    }
+
+    function updatePagination() {
+      const totalPages = getTotalPages();
+      currentPage = Math.min(currentPage, totalPages - 1);
+      currentPage = Math.max(0, currentPage);
+
+      document.getElementById('page-info').textContent = `${currentPage + 1} / ${totalPages}`;
+      document.getElementById('page-first').disabled = currentPage === 0;
+      document.getElementById('page-prev').disabled = currentPage === 0;
+      document.getElementById('page-next').disabled = currentPage >= totalPages - 1;
+      document.getElementById('page-last').disabled = currentPage >= totalPages - 1;
+
+      const start = currentPage * ITEMS_PER_PAGE;
+      const end = Math.min(start + ITEMS_PER_PAGE, sortedData.length);
+      document.getElementById('gallery-count').textContent =
+        `${start + 1}-${end} of ${sortedData.length}`;
+    }
+
+    function renderGallery() {
+      sortData();
+      updatePagination();
+
+      gallery.innerHTML = '';
+
+      const start = currentPage * ITEMS_PER_PAGE;
+      const displayData = sortedData.slice(start, start + ITEMS_PER_PAGE);
+
+      if (displayData.length === 0) {
+        gallery.innerHTML = '<div class="empty-state">No rules match filters</div>';
+        return;
+      }
+
+      for (const rule of displayData) {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        if (selectedRule && selectedRule.rule_id === rule.rule_id) {
+          item.classList.add('selected');
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = THUMB_SIZE;
+        canvas.height = THUMB_SIZE;
+        item.appendChild(canvas);
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = rule.rule_string;
+        item.appendChild(label);
+
+        drawThumbnail(canvas, rule.rule_id);
+
+        item.addEventListener('click', () => selectRule(rule));
+        item.addEventListener('dblclick', () => {
+          window.location.href = `lab.html?rule=${rule.rule_id}`;
+        });
+
+        gallery.appendChild(item);
+      }
+    }
+
+    function drawThumbnail(canvas, ruleId) {
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const birthMask = Math.floor(ruleId / 512);
+      const survivalMask = ruleId % 512;
+
+      const grid = new Uint8Array(size * size);
+      const nextGrid = new Uint8Array(size * size);
+
+      // Seeded random init
+      let seed = ruleId * 7919;
+      const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      for (let i = 0; i < grid.length; i++) {
+        grid[i] = rand() < 0.3 ? 1 : 0;
+      }
+
+      // Run 50 steps
+      for (let step = 0; step < 50; step++) {
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            let neighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const nx = (x + dx + size) % size;
+                const ny = (y + dy + size) % size;
+                if (grid[ny * size + nx]) neighbors++;
+              }
+            }
+            const alive = grid[y * size + x];
+            const mask = alive ? survivalMask : birthMask;
+            nextGrid[y * size + x] = (mask & (1 << neighbors)) ? 1 : 0;
+          }
+        }
+        grid.set(nextGrid);
+      }
+
+      // Draw
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#4a7a4a';
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (grid[y * size + x]) ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+
+    // ============================================
+    // SELECTION
+    // ============================================
+    function selectRule(rule) {
+      selectedRule = rule;
+
+      // Redraw scatter to show highlight
+      drawScatter();
+
+      // Update gallery selection
+      document.querySelectorAll('.gallery-item.selected').forEach(el => el.classList.remove('selected'));
+      const items = gallery.querySelectorAll('.gallery-item');
+      items.forEach(item => {
+        const label = item.querySelector('.label');
+        if (label && label.textContent === rule.rule_string) {
+          item.classList.add('selected');
+          // Scroll into view if not visible
+          item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+
+      // Update preview
+      document.getElementById('preview-empty').style.display = 'none';
+      document.getElementById('preview-content').style.display = 'block';
+      document.getElementById('preview-title').textContent = rule.rule_string;
+      document.getElementById('preview-id').textContent = rule.rule_id;
+      document.getElementById('preview-class').textContent = rule.classification || '--';
+      document.getElementById('preview-lambda').textContent = rule.lambda?.toFixed(4) || '--';
+      document.getElementById('preview-d').textContent = rule.D?.toFixed(4) || '--';
+      document.getElementById('preview-gamma').textContent = rule.gamma?.toFixed(1) || '--';
+      document.getElementById('preview-period').textContent = rule.period || '--';
+      document.getElementById('preview-link').href = `lab.html?rule=${rule.rule_id}`;
+
+      // Draw preview
+      drawPreview(rule.rule_id);
+    }
+
+    function drawPreview(ruleId) {
+      const size = 80;
+      const birthMask = Math.floor(ruleId / 512);
+      const survivalMask = ruleId % 512;
+
+      const grid = new Uint8Array(size * size);
+      const nextGrid = new Uint8Array(size * size);
+
+      let seed = ruleId * 7919;
+      const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      for (let i = 0; i < grid.length; i++) {
+        grid[i] = rand() < 0.3 ? 1 : 0;
+      }
+
+      for (let step = 0; step < 100; step++) {
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            let neighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const nx = (x + dx + size) % size;
+                const ny = (y + dy + size) % size;
+                if (grid[ny * size + nx]) neighbors++;
+              }
+            }
+            const alive = grid[y * size + x];
+            const mask = alive ? survivalMask : birthMask;
+            nextGrid[y * size + x] = (mask & (1 << neighbors)) ? 1 : 0;
+          }
+        }
+        grid.set(nextGrid);
+      }
+
+      previewCtx.fillStyle = '#050505';
+      previewCtx.fillRect(0, 0, size, size);
+      previewCtx.fillStyle = '#4a7a4a';
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (grid[y * size + x]) previewCtx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+
+    // ============================================
+    // PAGINATION & SORTING EVENTS
+    // ============================================
+    document.getElementById('sort-by').addEventListener('change', () => {
+      currentPage = 0;
+      renderGallery();
+    });
+
+    document.getElementById('sort-dir').addEventListener('change', () => {
+      currentPage = 0;
+      renderGallery();
+    });
+
+    document.getElementById('page-first').addEventListener('click', () => {
+      currentPage = 0;
+      renderGallery();
+    });
+
+    document.getElementById('page-prev').addEventListener('click', () => {
+      currentPage = Math.max(0, currentPage - 1);
+      renderGallery();
+    });
+
+    document.getElementById('page-next').addEventListener('click', () => {
+      currentPage = Math.min(getTotalPages() - 1, currentPage + 1);
+      renderGallery();
+    });
+
+    document.getElementById('page-last').addEventListener('click', () => {
+      currentPage = getTotalPages() - 1;
+      renderGallery();
+    });
+
+    // ============================================
+    // INIT
+    // ============================================
+    setupRangeSliders();
+    loadData();
+  </script>
+</body>
+</html>

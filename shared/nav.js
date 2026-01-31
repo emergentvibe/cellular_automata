@@ -3,13 +3,14 @@
 (function() {
   const pages = [
     { href: 'home.html', label: 'Home', section: 'main' },
-    { href: 'atlas.html', label: 'Atlas', section: 'main' },
-    { href: 'detail.html', label: 'Detail', section: 'main' },
     { divider: true },
-    { href: 'survey-gpu.html', label: 'Lab', section: 'research' },
-    { href: 'analyze-pass2.html', label: 'Analysis', section: 'research' },
+    { href: 'survey.html', label: 'Survey', section: 'workflow' },
+    { href: 'explore.html', label: 'Explore', section: 'workflow' },
+    { href: 'analyze.html', label: 'Analyze', section: 'workflow' },
+    { href: 'lab.html', label: 'Lab', section: 'workflow' },
     { divider: true },
-    { href: 'migrate-csv.html', label: 'Data', section: 'tools' },
+    { href: 'about.html', label: 'About', section: 'info' },
+    { href: 'data.html', label: 'Data', section: 'info' },
   ];
 
   function getCurrentPage() {

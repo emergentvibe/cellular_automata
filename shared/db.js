@@ -11,22 +11,46 @@ const CellsDB = {
 
   /**
    * Initialize the database
+   *
+   * Schema evolution:
+   * v1: Basic rule metrics (lambda, dimension, gamma, classification, period)
+   * v2: Added notes support, topology/tiling fields, pass tracking, timestamps
    */
   async init() {
     if (this.db) return this.db;
 
     this.db = new Dexie('CellsDB');
 
+    // Version 1: Original schema
     this.db.version(1).stores({
-      // Primary key is ruleId (numeric 0-262143)
-      // Indexed fields for range queries
       rules: 'ruleId, lambda, dimension, gamma, classification, period',
-      // Collections for user favorites
       collections: '++id, name'
     });
 
+    // Version 2: Future-proofing for multi-pass analysis, topology, and user notes
+    // Added indexes: passLevel (for filtering by analysis depth), topology, hasNotes
+    // New fields (not indexed): notes, notesUpdatedAt, tiling, neighborhood,
+    //   surveyedAt, pass2At, pass3At, tags
+    this.db.version(2).stores({
+      rules: 'ruleId, lambda, dimension, gamma, classification, period, passLevel, topology, hasNotes',
+      collections: '++id, name, createdAt'
+    }).upgrade(async tx => {
+      // Migrate existing rules to have passLevel = 1
+      await tx.table('rules').toCollection().modify(rule => {
+        if (rule.passLevel === undefined) {
+          rule.passLevel = 1; // Assume all existing data is pass 1
+        }
+        if (rule.topology === undefined) {
+          rule.topology = 'torus'; // Default topology
+        }
+        if (rule.hasNotes === undefined) {
+          rule.hasNotes = !!rule.notes;
+        }
+      });
+    });
+
     await this.db.open();
-    console.log('[CellsDB] Database initialized');
+    console.log('[CellsDB] Database initialized (v2)');
     return this.db;
   },
 
@@ -110,6 +134,14 @@ const CellsDB = {
     await this.init();
     // Ensure ruleId is a number
     rule.ruleId = Number(rule.ruleId);
+
+    // Set hasNotes flag for indexing
+    rule.hasNotes = rule.notes && rule.notes.trim().length > 0 ? 1 : 0;
+
+    // Set defaults for new fields if not present
+    if (rule.passLevel === undefined) rule.passLevel = 1;
+    if (rule.topology === undefined) rule.topology = 'torus';
+
     return await this.db.rules.put(rule);
   },
 
@@ -141,6 +173,32 @@ const CellsDB = {
     await this.init();
     const rule = await this.db.rules.get(Number(ruleId));
     return rule !== undefined;
+  },
+
+  /**
+   * Get rules by pass level
+   * @param {number} passLevel - Pass level (1, 2, 3)
+   */
+  async getRulesByPassLevel(passLevel) {
+    await this.init();
+    return await this.db.rules.where('passLevel').equals(passLevel).toArray();
+  },
+
+  /**
+   * Get rules that have notes
+   */
+  async getRulesWithNotes() {
+    await this.init();
+    return await this.db.rules.where('hasNotes').equals(1).toArray();
+  },
+
+  /**
+   * Get rules by topology
+   * @param {string} topology - Topology type ('torus', 'flat', 'sphere', 'hyperbolic')
+   */
+  async getRulesByTopology(topology) {
+    await this.init();
+    return await this.db.rules.where('topology').equals(topology).toArray();
   },
 
   /**

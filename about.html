@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About the Research - Cells</title>
+  <link rel="stylesheet" href="shared/styles.css">
+  <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+  <script src="shared/db.js"></script>
+  <script src="shared/nav.js"></script>
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem 2rem 4rem;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 200;
+      letter-spacing: 0.3em;
+      color: #7a4a7a;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 3rem;
+    }
+
+    .section {
+      margin-bottom: 3rem;
+    }
+
+    .section h2 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: #666;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #222;
+    }
+
+    .section p {
+      color: #888;
+      line-height: 1.8;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .section p strong {
+      color: #9a7a9a;
+    }
+
+    .section p code {
+      background: #1a1a1a;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      color: #7a7a9a;
+    }
+
+    .highlight-box {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-left: 3px solid #4a2a4a;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .highlight-box p {
+      margin: 0;
+      color: #777;
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+
+    .hierarchy-list {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 4px;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+    }
+
+    .hierarchy-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .hierarchy-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .hierarchy-level {
+      width: 3rem;
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      color: #555;
+      text-transform: uppercase;
+    }
+
+    .hierarchy-content {
+      flex: 1;
+    }
+
+    .hierarchy-name {
+      color: #7a7a9a;
+      font-size: 0.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .hierarchy-desc {
+      color: #555;
+      font-size: 0.7rem;
+      line-height: 1.5;
+    }
+
+    .topology-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .topology-item {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 4px;
+      padding: 1rem;
+    }
+
+    .topology-item h4 {
+      font-size: 0.75rem;
+      color: #7a7a9a;
+      margin-bottom: 0.5rem;
+      font-weight: normal;
+    }
+
+    .topology-item p {
+      font-size: 0.7rem;
+      color: #555;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .pass-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .pass-item {
+      display: flex;
+      align-items: flex-start;
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 4px;
+      padding: 1rem;
+    }
+
+    .pass-number {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #1a1a1a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #666;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+
+    .pass-content h4 {
+      font-size: 0.8rem;
+      color: #7a7a9a;
+      margin-bottom: 0.3rem;
+      font-weight: normal;
+    }
+
+    .pass-content p {
+      font-size: 0.7rem;
+      color: #555;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: 0.75rem 1.25rem;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.8rem;
+      transition: all 0.15s ease;
+    }
+
+    .back-link:hover {
+      background: #222;
+      color: #aaa;
+    }
+
+    @media (max-width: 600px) {
+      .topology-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="page-title">Why We Survey</h1>
+    <p class="page-subtitle">Understanding the foundations of emergence in cellular automata</p>
+
+    <!-- Computational Irreducibility -->
+    <div class="section">
+      <h2>Computational Irreducibility</h2>
+      <p>
+        In 2002, Stephen Wolfram formalized a principle called <strong>computational irreducibility</strong>:
+        for many computational systems, the only way to determine what they'll do is to run them. There are no shortcuts.
+      </p>
+      <p>
+        This applies directly to cellular automata. Just because a rule is simple
+        (e.g., "birth on 3 neighbors, survival on 2-3") doesn't mean its behavior is simple.
+        Conway's Game of Life proves this — a trivial rule specification produces Turing-complete complexity.
+      </p>
+      <div class="highlight-box">
+        <p>
+          We can't predict which of the 262,144 Life-like rules will be interesting.
+          We have to run them and measure what happens.
+        </p>
+      </div>
+      <p>
+        This is why systematic survey matters. Mathematical analysis can tell us some things
+        (e.g., rules with no survival conditions will always die out), but the interesting
+        behaviors — chaos, gliders, computation — emerge only through simulation.
+      </p>
+    </div>
+
+    <!-- Why Topology Matters -->
+    <div class="section">
+      <h2>Why Topology Matters</h2>
+      <p>
+        The "universe" a cellular automaton lives in isn't just its rules — it's also the shape of space itself.
+        The same rule running on different topologies can behave completely differently.
+      </p>
+      <div class="topology-grid">
+        <div class="topology-item">
+          <h4>Flat Grid</h4>
+          <p>Cells at edges have fewer neighbors. Boundary effects can trap or destroy patterns. Most common in implementations.</p>
+        </div>
+        <div class="topology-item">
+          <h4>Toroidal</h4>
+          <p>Left edge connects to right, top to bottom. No boundaries. Patterns can wrap around. This is what we use for surveys.</p>
+        </div>
+        <div class="topology-item">
+          <h4>Spherical</h4>
+          <p>Like a globe. Cells near poles have different neighbor configurations. How does curvature affect emergence?</p>
+        </div>
+        <div class="topology-item">
+          <h4>Hyperbolic</h4>
+          <p>Negative curvature means more neighbors than Euclidean space. Patterns spread differently. Largely unexplored.</p>
+        </div>
+      </div>
+      <p>
+        If we want to understand emergence, topology isn't optional — it's fundamental.
+        A glider that works on a torus might not exist on a sphere.
+        A rule that's boring on a flat grid might be fascinating in hyperbolic space.
+      </p>
+    </div>
+
+    <!-- Hierarchical Emergence -->
+    <div class="section">
+      <h2>Hierarchical Emergence</h2>
+      <p>
+        Some cellular automata produce <strong>patterns made of patterns</strong>. This hierarchy
+        is what makes certain rule spaces "rich" for engineering and discovery.
+      </p>
+      <div class="hierarchy-list">
+        <div class="hierarchy-item">
+          <div class="hierarchy-level">Level 0</div>
+          <div class="hierarchy-content">
+            <div class="hierarchy-name">Individual Cells</div>
+            <div class="hierarchy-desc">The atomic units. On or off, alive or dead.</div>
+          </div>
+        </div>
+        <div class="hierarchy-item">
+          <div class="hierarchy-level">Level 1</div>
+          <div class="hierarchy-content">
+            <div class="hierarchy-name">Stable Structures</div>
+            <div class="hierarchy-desc">Still lifes (static), oscillators (periodic), gliders (moving). These persist.</div>
+          </div>
+        </div>
+        <div class="hierarchy-item">
+          <div class="hierarchy-level">Level 2</div>
+          <div class="hierarchy-content">
+            <div class="hierarchy-name">Pattern Generators</div>
+            <div class="hierarchy-desc">Glider guns emit gliders. Breeders emit guns. Structures that create other structures.</div>
+          </div>
+        </div>
+        <div class="hierarchy-item">
+          <div class="hierarchy-level">Level 3</div>
+          <div class="hierarchy-content">
+            <div class="hierarchy-name">Computational Structures</div>
+            <div class="hierarchy-desc">Logic gates, memory, counters. Patterns that compute.</div>
+          </div>
+        </div>
+        <div class="hierarchy-item">
+          <div class="hierarchy-level">Level 4+</div>
+          <div class="hierarchy-content">
+            <div class="hierarchy-name">Universal Computation</div>
+            <div class="hierarchy-desc">Turing machines, self-replicators. The rule space becomes a programming language.</div>
+          </div>
+        </div>
+      </div>
+      <p>
+        Not all rules support all levels. Most rules barely reach Level 1.
+        Understanding <strong>what enables each level</strong> — how universe structure
+        (rules, topology, tiling) affects hierarchical depth — is our core research question.
+      </p>
+    </div>
+
+    <!-- Multi-Pass Analysis -->
+    <div class="section">
+      <h2>Multi-Pass Analysis</h2>
+      <p>
+        As we learn more about the rule space, we ask deeper questions.
+        Our analysis is structured in passes, each narrowing focus and increasing depth.
+      </p>
+      <div class="pass-timeline">
+        <div class="pass-item">
+          <div class="pass-number">1</div>
+          <div class="pass-content">
+            <h4>Initial Survey</h4>
+            <p>Run every rule for 1000 steps from random initial conditions. Measure basic metrics: lambda, gamma, dimension, period. Fast, broad coverage.</p>
+          </div>
+        </div>
+        <div class="pass-item">
+          <div class="pass-number">2</div>
+          <div class="pass-content">
+            <h4>Deeper Analysis</h4>
+            <p>Run expensive computations on promising subsets. Glider detection, structure classification, longer simulations. Filter for rules showing complex behavior.</p>
+          </div>
+        </div>
+        <div class="pass-item">
+          <div class="pass-number">3</div>
+          <div class="pass-content">
+            <h4>Curated Study</h4>
+            <p>Deep investigation of the most interesting rules. Pattern cataloging, emergence analysis, engineering potential. Human insight combined with computation.</p>
+          </div>
+        </div>
+      </div>
+      <p>
+        The Atlas lets you explore rules from any pass. As new metrics are developed
+        and new passes run, the database grows richer. Each contribution expands what we can discover.
+      </p>
+    </div>
+
+    <!-- The Extensible Vision -->
+    <div class="section">
+      <h2>The Extensible Vision</h2>
+      <p>
+        This isn't a static dataset — it's a living research platform. Anyone can:
+      </p>
+      <p>
+        <strong>Run surveys</strong> that append the database. Your browser contributes to the shared understanding.
+      </p>
+      <p>
+        <strong>Write new metrics</strong>. Come up with a new way to measure rules? Implement the algorithm, run it, add the metadata.
+      </p>
+      <p>
+        <strong>Filter and analyze</strong> at multiple layers. Use coarse metrics to find candidates, then deep analysis to understand them.
+      </p>
+      <p>
+        <strong>Vary the fundamentals</strong>. Topology, grid tiling, neighborhood definition — each creates a new universe to explore.
+      </p>
+      <div class="highlight-box">
+        <p>
+          Our goal: understand how the design choices of a universe — its rules, its geometry,
+          its connectivity — affect what kinds of complexity can emerge within it.
+        </p>
+      </div>
+    </div>
+
+    <a href="home.html" class="back-link">Back to Home</a>
+  </div>
+</body>
+</html>

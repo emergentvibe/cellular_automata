@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cells - Rule Detail</title>
+  <title>Cells - Lab</title>
   <link rel="stylesheet" href="shared/styles.css">
   <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
   <script src="shared/db.js"></script>
@@ -383,6 +383,12 @@
         <div>Size <span class="stats-value" id="sizeDisplay">512x512</span></div>
         <div>Rule <span class="stats-value" id="ruleDisplay">B3/S23</span></div>
       </div>
+
+      <div class="control-group" id="notes-section" style="display: none;">
+        <div class="control-group-label">Notes</div>
+        <textarea id="notes-field" placeholder="Add your notes about this rule..." style="width: 100%; min-height: 80px; background: #0d0d0d; border: 1px solid #1f1f1f; color: #888; font-family: inherit; font-size: 0.6rem; padding: 0.5rem; resize: vertical; border-radius: 2px;"></textarea>
+        <div id="notes-status" style="font-size: 0.5rem; color: #353535; margin-top: 0.25rem;"></div>
+      </div>
     </div>
   </div>
 
@@ -442,6 +448,26 @@
       const birth = match[1] ? match[1].split('').map(Number) : [];
       const survival = match[2] ? match[2].split('').map(Number) : [];
       return { birth, survival, name: str.toUpperCase() };
+    }
+
+    function ruleIdToNotation(ruleId) {
+      const birthMask = Math.floor(ruleId / 512);
+      const survivalMask = ruleId % 512;
+      let birth = '', survival = '';
+      for (let i = 0; i <= 8; i++) {
+        if (birthMask & (1 << i)) birth += i;
+        if (survivalMask & (1 << i)) survival += i;
+      }
+      return `B${birth}/S${survival}`;
+    }
+
+    function notationToRuleId(notation) {
+      const parsed = parseBSNotation(notation);
+      if (!parsed) return null;
+      let birthMask = 0, survivalMask = 0;
+      for (const n of parsed.birth) birthMask |= (1 << n);
+      for (const n of parsed.survival) survivalMask |= (1 << n);
+      return birthMask * 512 + survivalMask;
     }
 
     function ruleToBitmasks(rule) {
@@ -1153,6 +1179,10 @@
         customInput.style.display = 'none';
         currentRule = e.target.value;
         updateStats();
+        updateURLWithRule();
+        // Load notes for new rule
+        const ruleId = notationToRuleId(rules[currentRule].name);
+        if (ruleId !== null) loadNotes(ruleId);
       }
     });
 
@@ -1163,7 +1193,11 @@
           rules['custom'] = parsed;
           currentRule = 'custom';
           updateStats();
+          updateURLWithRule();
           e.target.style.borderColor = '#2a4a2a';
+          // Load notes for new rule
+          const ruleId = notationToRuleId(parsed.name);
+          if (ruleId !== null) loadNotes(ruleId);
         } else {
           e.target.style.borderColor = '#4a2a2a';
         }
@@ -1256,10 +1290,152 @@
     });
 
     // ============================================
+    // URL ROUTING
+    // ============================================
+    function loadRuleFromURL() {
+      const params = new URLSearchParams(window.location.search);
+
+      // Check for rule parameter (can be rule_id or B/S notation)
+      const ruleParam = params.get('rule');
+      if (ruleParam) {
+        // Try parsing as a number (rule_id)
+        const ruleId = parseInt(ruleParam);
+        if (!isNaN(ruleId) && ruleId >= 0 && ruleId < 262144) {
+          const notation = ruleIdToNotation(ruleId);
+          const parsed = parseBSNotation(notation);
+          if (parsed) {
+            rules['custom'] = parsed;
+            currentRule = 'custom';
+            document.getElementById('ruleSelect').value = 'custom';
+            document.getElementById('customRule').style.display = 'block';
+            document.getElementById('customRule').value = notation;
+            document.title = `${notation} - Cells`;
+            return true;
+          }
+        }
+
+        // Try parsing as B/S notation
+        const parsed = parseBSNotation(ruleParam);
+        if (parsed) {
+          rules['custom'] = parsed;
+          currentRule = 'custom';
+          document.getElementById('ruleSelect').value = 'custom';
+          document.getElementById('customRule').style.display = 'block';
+          document.getElementById('customRule').value = parsed.name;
+          document.title = `${parsed.name} - Cells`;
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function updateURLWithRule() {
+      const notation = rules[currentRule].name;
+      const ruleId = notationToRuleId(notation);
+      const url = new URL(window.location);
+      if (ruleId !== null) {
+        url.searchParams.set('rule', ruleId);
+      } else {
+        url.searchParams.set('rule', notation);
+      }
+      window.history.replaceState({}, '', url);
+      document.title = `${notation} - Cells`;
+    }
+
+    // ============================================
+    // NOTES (persisted to IndexedDB)
+    // ============================================
+    let currentRuleId = null;
+    let notesSaveTimeout = null;
+
+    async function loadNotes(ruleId) {
+      currentRuleId = ruleId;
+      const notesSection = document.getElementById('notes-section');
+      const notesField = document.getElementById('notes-field');
+      const notesStatus = document.getElementById('notes-status');
+
+      notesSection.style.display = 'block';
+      notesField.value = '';
+      notesStatus.textContent = '';
+
+      if (typeof CellsDB === 'undefined') {
+        notesStatus.textContent = 'Database not available';
+        return;
+      }
+
+      try {
+        const rule = await CellsDB.getRule(ruleId);
+        if (rule && rule.notes) {
+          notesField.value = rule.notes;
+          notesStatus.textContent = 'Notes loaded';
+        } else if (rule) {
+          notesStatus.textContent = 'No notes yet';
+        } else {
+          notesStatus.textContent = 'Rule not in database';
+        }
+      } catch (e) {
+        notesStatus.textContent = 'Error loading notes';
+        console.error('Error loading notes:', e);
+      }
+    }
+
+    async function saveNotes() {
+      if (currentRuleId === null || typeof CellsDB === 'undefined') return;
+
+      const notesField = document.getElementById('notes-field');
+      const notesStatus = document.getElementById('notes-status');
+      const notes = notesField.value;
+
+      try {
+        const rule = await CellsDB.getRule(currentRuleId);
+        if (rule) {
+          rule.notes = notes;
+          rule.notesUpdatedAt = new Date().toISOString();
+          await CellsDB.saveRule(rule);
+          notesStatus.textContent = 'Saved';
+        } else {
+          // Create minimal rule entry with just notes
+          await CellsDB.saveRule({
+            ruleId: currentRuleId,
+            ruleString: ruleIdToNotation(currentRuleId),
+            notes: notes,
+            notesUpdatedAt: new Date().toISOString()
+          });
+          notesStatus.textContent = 'Saved (new entry)';
+        }
+      } catch (e) {
+        notesStatus.textContent = 'Error saving';
+        console.error('Error saving notes:', e);
+      }
+    }
+
+    function setupNotesHandler() {
+      const notesField = document.getElementById('notes-field');
+      const notesStatus = document.getElementById('notes-status');
+
+      notesField.addEventListener('input', () => {
+        notesStatus.textContent = 'Typing...';
+        // Debounce save
+        if (notesSaveTimeout) clearTimeout(notesSaveTimeout);
+        notesSaveTimeout = setTimeout(saveNotes, 1000);
+      });
+
+      notesField.addEventListener('blur', () => {
+        // Save immediately on blur
+        if (notesSaveTimeout) clearTimeout(notesSaveTimeout);
+        saveNotes();
+      });
+    }
+
+    // ============================================
     // INITIALIZATION
     // ============================================
     async function init() {
       initCPUGrids();
+
+      // Load rule from URL if present
+      const ruleFromURL = loadRuleFromURL();
 
       // Try to init WebGPU
       gpuAvailable = await initWebGPU();
@@ -1276,6 +1452,19 @@
 
       updateGPUBadge();
       updateStats();
+
+      // Set up notes handler
+      setupNotesHandler();
+
+      // If rule was loaded from URL, start with random pattern and load notes
+      if (ruleFromURL) {
+        randomize(0.3);
+        const ruleId = notationToRuleId(rules[currentRule].name);
+        if (ruleId !== null) {
+          loadNotes(ruleId);
+        }
+      }
+
       render();
       requestAnimationFrame(animate);
     }

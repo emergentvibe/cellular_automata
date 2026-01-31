@@ -3,63 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cells - Exploring Rule Space</title>
+  <title>Cells - Mapping the Life-Like Universe</title>
   <link rel="stylesheet" href="shared/styles.css">
   <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
   <script src="shared/db.js"></script>
   <script src="shared/nav.js"></script>
   <style>
     body {
-      padding: 2rem;
-      padding-top: 5rem;
+      padding: 0;
+      padding-top: 3rem;
     }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
+
+    /* Hero Section */
     .hero {
+      position: relative;
+      height: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    .hero canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.4;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
       text-align: center;
-      margin-bottom: 3rem;
+      padding: 2rem;
     }
     .hero h1 {
-      font-size: 2rem;
-      font-weight: 300;
-      letter-spacing: 0.2em;
+      font-size: 3rem;
+      font-weight: 200;
+      letter-spacing: 0.4em;
       color: #7a4a7a;
       margin-bottom: 0.5rem;
     }
-    .hero .tagline {
-      font-size: 1rem;
+    .hero .rule-label {
+      font-size: 0.7rem;
       color: #555;
-      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+    .hero .tagline {
+      font-size: 1.1rem;
+      color: #888;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    .hero .tagline em {
+      color: #9a7a9a;
+      font-style: normal;
+    }
+    .hero-controls {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .hero-controls button {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid #333;
+      color: #666;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .hero-controls button:hover {
+      color: #888;
+      border-color: #444;
     }
 
-    .question {
-      background: linear-gradient(135deg, #1a1a2a 0%, #111 100%);
-      border: 1px solid #2a2a3a;
-      border-radius: 8px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      text-align: center;
-    }
-    .question h2 {
-      font-size: 1.3rem;
-      font-weight: 400;
-      color: #9a7a9a;
-      margin-bottom: 1rem;
-    }
-    .question p {
-      color: #777;
-      line-height: 1.8;
-      max-width: 700px;
+    .container {
+      max-width: 900px;
       margin: 0 auto;
+      padding: 0 2rem 2rem;
     }
 
     .stats-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
-      margin-bottom: 2rem;
+      margin-bottom: 3rem;
     }
     .stat-card {
       background: #111;
@@ -86,70 +119,90 @@
     }
 
     .section {
-      margin-bottom: 2.5rem;
+      margin-bottom: 3rem;
     }
-    .section h3 {
-      font-size: 0.8rem;
+    .section h2 {
+      font-size: 1rem;
       text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: #555;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
+      letter-spacing: 0.2em;
+      color: #666;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
       border-bottom: 1px solid #222;
     }
     .section p {
-      color: #777;
-      line-height: 1.7;
+      color: #888;
+      line-height: 1.8;
       margin-bottom: 1rem;
     }
+    .section p strong {
+      color: #9a7a9a;
+    }
 
-    .hierarchy {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
+    .metric-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
       margin: 1.5rem 0;
     }
-    .level {
-      flex: 1;
+    .metric-item {
       background: #0d0d0d;
       border: 1px solid #1a1a1a;
       border-radius: 4px;
       padding: 1rem;
-      text-align: center;
     }
-    .level .num {
+    .metric-item .symbol {
       font-size: 1.5rem;
-      color: #4a4a6a;
+      color: #6a6a8a;
       margin-bottom: 0.25rem;
     }
-    .level .name {
-      font-size: 0.7rem;
+    .metric-item .name {
+      font-size: 0.75rem;
       color: #666;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
     }
-    .level .example {
-      font-size: 0.65rem;
-      color: #444;
-      margin-top: 0.5rem;
+    .metric-item .desc {
+      font-size: 0.7rem;
+      color: #555;
+      line-height: 1.5;
     }
-    .level.highlight {
-      border-color: #4a4a7a;
-      background: #0d0d1a;
+
+    .vision-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin: 1.5rem 0;
     }
-    .level.highlight .num {
-      color: #7a7aaa;
+    .vision-item {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 4px;
+      padding: 1.25rem;
+    }
+    .vision-item h4 {
+      font-size: 0.8rem;
+      color: #7a7a9a;
+      margin-bottom: 0.5rem;
+    }
+    .vision-item p {
+      font-size: 0.75rem;
+      color: #555;
+      line-height: 1.6;
+      margin: 0;
     }
 
     .actions {
       display: flex;
       gap: 1rem;
       justify-content: center;
-      margin-top: 2rem;
+      margin: 2.5rem 0;
+      flex-wrap: wrap;
     }
     .actions a {
       display: inline-block;
-      padding: 0.8rem 1.5rem;
+      padding: 0.9rem 1.75rem;
       border-radius: 4px;
       text-decoration: none;
       font-size: 0.85rem;
@@ -179,33 +232,46 @@
       font-size: 0.7rem;
       color: #444;
       margin-top: 3rem;
-      padding-top: 1rem;
+      padding-top: 1.5rem;
       border-top: 1px solid #1a1a1a;
     }
     .footnote a {
       color: #555;
     }
+    .footnote a:hover {
+      color: #777;
+    }
+
+    @media (max-width: 700px) {
+      .stats-row, .metric-list { grid-template-columns: 1fr; }
+      .vision-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2rem; letter-spacing: 0.2em; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="hero">
+  <!-- Hero with animated CA -->
+  <div class="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
       <h1>CELLS</h1>
-      <p class="tagline">Exploring the space of cellular automata rules</p>
-    </div>
-
-    <div class="question">
-      <h2>What makes a universe fertile for complexity?</h2>
-      <p>
-        Conway's Game of Life is famous for producing gliders, spaceships, and even universal computers
-        from simple rules. But Life is just one of 262,144 possible "Life-like" rules.
-        Which others can support emergent complexity? Where do they cluster in rule space?
+      <div class="rule-label">Rule B368/S245 (HighLife) — one of 262,144 Life-like cellular automata</div>
+      <p class="tagline">
+        Most of this space has never been systematically explored.<br>
+        <em>We're mapping it.</em>
       </p>
     </div>
+    <div class="hero-controls">
+      <button id="btn-pause">Pause</button>
+      <button id="btn-reset">Reset</button>
+    </div>
+  </div>
 
+  <div class="container">
+    <!-- Stats Row -->
     <div class="stats-row">
       <div class="stat-card">
-        <div class="value" id="stat-total">262,144</div>
+        <div class="value">262,144</div>
         <div class="label">Total Rules</div>
         <div class="sublabel">Life-like CA (B/S notation)</div>
       </div>
@@ -217,74 +283,93 @@
       <div class="stat-card">
         <div class="value" id="stat-interesting">?</div>
         <div class="label">Interesting</div>
-        <div class="sublabel">Rules worth exploring</div>
+        <div class="sublabel">Chaotic/aperiodic rules</div>
       </div>
     </div>
 
+    <!-- The Space -->
     <div class="section">
-      <h3>The Hierarchy of Emergence</h3>
+      <h2>The Space</h2>
       <p>
-        We measure rules by what structures they can support. Most rules either die out or explode chaotically.
-        A few, like Life (B3/S23), sit at the "edge of chaos" and spontaneously produce higher-order structures.
+        The Game of Life is famous, but it's just one rule in a vast space of possibilities.
+        Life-like cellular automata follow the same grid-based structure: cells live or die based on how many neighbors they have.
+        Vary the birth and survival conditions, and you get entirely different universes.
       </p>
-      <div class="hierarchy">
-        <div class="level">
-          <div class="num">0</div>
-          <div class="name">Cells</div>
-          <div class="example">Individual pixels</div>
+      <p>
+        With 9 possible neighbor counts (0-8), there are 2<sup>18</sup> = <strong>262,144 distinct rules</strong>.
+        Some produce stable patterns that freeze. Others oscillate endlessly. Some grow chaotic and noisy.
+        And a rare few generate gliders, spaceships, and complex emergent structures.
+      </p>
+      <p>
+        Which ones? We can't predict. We have to run them and find out.
+      </p>
+    </div>
+
+    <!-- The Method -->
+    <div class="section">
+      <h2>The Method</h2>
+      <p>
+        We systematically survey rule space, running each rule for 1000+ steps from random initial conditions and measuring:
+      </p>
+      <div class="metric-list">
+        <div class="metric-item">
+          <div class="symbol">λ</div>
+          <div class="name">Lambda</div>
+          <div class="desc">Damage spreading. λ≈0 heals; λ>0 spreads chaos. Interesting rules sit at the boundary.</div>
         </div>
-        <div class="level">
-          <div class="num">1</div>
-          <div class="name">Still Lifes</div>
-          <div class="example">Blocks, beehives</div>
+        <div class="metric-item">
+          <div class="symbol">D</div>
+          <div class="name">Dimension</div>
+          <div class="desc">Fractal dimension of patterns. D≈1 means filaments; D≈2 means solid blobs.</div>
         </div>
-        <div class="level highlight">
-          <div class="num">2</div>
-          <div class="name">Gliders</div>
-          <div class="example">Moving patterns</div>
-        </div>
-        <div class="level">
-          <div class="num">3</div>
-          <div class="name">Guns</div>
-          <div class="example">Glider factories</div>
-        </div>
-        <div class="level">
-          <div class="num">4+</div>
-          <div class="name">Computers</div>
-          <div class="example">Universal machines</div>
+        <div class="metric-item">
+          <div class="symbol">γ</div>
+          <div class="name">Gamma</div>
+          <div class="desc">Activity rate. Does the pattern settle, oscillate, or keep changing?</div>
         </div>
       </div>
       <p>
-        We're searching for rules that spontaneously reach Level 2 (gliders) without engineering.
-        These rules might be "fertile" — capable of supporting even higher complexity.
+        Each measurement helps locate which regions of rule space produce complexity, and which collapse into order or chaos.
       </p>
     </div>
 
+    <!-- The Vision -->
     <div class="section">
-      <h3>How We Measure</h3>
+      <h2>The Vision</h2>
       <p>
-        Each rule is measured across multiple trials with random initial conditions:
+        Our goal isn't just to find beautiful patterns (though we've found many). It's to understand <strong>why</strong> certain rules produce complexity while others don't.
       </p>
+      <div class="vision-grid">
+        <div class="vision-item">
+          <h4>Extensible Analysis</h4>
+          <p>Anyone can write new metrics and run them on the database. Each survey pass adds more metadata, enabling deeper filtering and discovery.</p>
+        </div>
+        <div class="vision-item">
+          <h4>Layered Exploration</h4>
+          <p>Filter → Analyze → Filter deeper → Analyze deeper. Multiple passes narrow focus and increase depth to find the gems.</p>
+        </div>
+        <div class="vision-item">
+          <h4>Topology as Variable</h4>
+          <p>How does the shape of space affect emergence? Flat grid, torus, sphere, hyperbolic — each creates different possibilities.</p>
+        </div>
+        <div class="vision-item">
+          <h4>Patterns on Patterns</h4>
+          <p>Hierarchical emergence: cells → still lifes → gliders → guns → computers. Understanding what enables each level.</p>
+        </div>
+      </div>
       <p>
-        <strong>λ (Lambda)</strong> — Damage spreading. Drop a perturbation and measure how it propagates.
-        λ ≈ 0 means damage heals; λ > 0 means chaos; interesting rules sit near the boundary.
-      </p>
-      <p>
-        <strong>D (Dimension)</strong> — Fractal dimension of the final pattern.
-        D ≈ 1 means lines/filaments; D ≈ 2 means solid blobs.
-      </p>
-      <p>
-        <strong>γ (Gamma)</strong> — Complexity growth rate.
-        Does the pattern settle, oscillate, or keep growing in complexity?
+        By systematically varying the fundamental rules of the universe — birth/survival conditions, topology, grid tiling — we can understand how these design choices affect what kinds of complexity can exist.
       </p>
     </div>
 
+    <!-- Call to Action -->
     <div class="actions">
-      <a href="atlas.html" class="primary">Explore the Atlas</a>
-      <a href="detail.html" class="secondary">Try a Rule</a>
-      <a href="survey-gpu.html" class="secondary">Run Survey</a>
+      <a href="explore.html" class="primary">Explore Rules</a>
+      <a href="about.html" class="secondary">About the Research</a>
+      <a href="survey.html" class="secondary">Run Survey</a>
     </div>
 
+    <!-- Footer -->
     <div class="footnote">
       Built by <a href="https://emergentvibe.com">@emergentvibe</a> ·
       <a href="https://github.com/emergentvibe/cells">Source</a>
@@ -292,13 +377,108 @@
   </div>
 
   <script>
+    // ============================================
+    // HERO ANIMATION (HighLife B368/S245)
+    // ============================================
+    const canvas = document.getElementById('hero-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const GRID_SIZE = 200;
+    const BIRTH_MASK = 0b101001000;  // B368
+    const SURVIVAL_MASK = 0b000101100;  // S245
+
+    let grid = new Uint8Array(GRID_SIZE * GRID_SIZE);
+    let nextGrid = new Uint8Array(GRID_SIZE * GRID_SIZE);
+    let animationId = null;
+    let isPaused = false;
+
+    function initGrid() {
+      const seed = Date.now();
+      let rng = seed;
+      const rand = () => { rng = (rng * 1103515245 + 12345) & 0x7fffffff; return rng / 0x7fffffff; };
+
+      for (let i = 0; i < grid.length; i++) {
+        grid[i] = rand() < 0.3 ? 1 : 0;
+      }
+    }
+
+    function step() {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          let neighbors = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = (x + dx + GRID_SIZE) % GRID_SIZE;
+              const ny = (y + dy + GRID_SIZE) % GRID_SIZE;
+              neighbors += grid[ny * GRID_SIZE + nx];
+            }
+          }
+          const alive = grid[y * GRID_SIZE + x];
+          const mask = alive ? SURVIVAL_MASK : BIRTH_MASK;
+          nextGrid[y * GRID_SIZE + x] = (mask & (1 << neighbors)) ? 1 : 0;
+        }
+      }
+      [grid, nextGrid] = [nextGrid, grid];
+    }
+
+    function render() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      const cellW = canvas.width / GRID_SIZE;
+      const cellH = canvas.height / GRID_SIZE;
+
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#4a2a4a';
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          if (grid[y * GRID_SIZE + x]) {
+            ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+          }
+        }
+      }
+    }
+
+    function animate() {
+      if (!isPaused) {
+        step();
+        render();
+      }
+      animationId = requestAnimationFrame(animate);
+    }
+
+    // Controls
+    document.getElementById('btn-pause').addEventListener('click', () => {
+      isPaused = !isPaused;
+      document.getElementById('btn-pause').textContent = isPaused ? 'Play' : 'Pause';
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      initGrid();
+      render();
+    });
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+      render();
+    });
+
+    // Start
+    initGrid();
+    animate();
+
+    // ============================================
+    // LOAD STATS
+    // ============================================
     async function loadStats() {
       try {
         const stats = await CellsDB.getStats();
         document.getElementById('stat-surveyed').textContent = stats.count.toLocaleString();
         document.getElementById('stat-coverage').textContent = `${stats.percentage}% coverage`;
 
-        // Count "interesting" rules (chaotic with good D)
         const rules = await CellsDB.getAllRules();
         const interesting = rules.filter(r =>
           r.classification === 'chaotic' || r.classification === 'aperiodic'
@@ -307,6 +487,7 @@
       } catch (e) {
         document.getElementById('stat-surveyed').textContent = '0';
         document.getElementById('stat-coverage').textContent = 'No data yet';
+        document.getElementById('stat-interesting').textContent = '?';
       }
     }
     loadStats();
